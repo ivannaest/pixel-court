@@ -599,7 +599,7 @@ function compactGameState(game) {
     vx: Math.round(game.ball.vx * 10) / 10,
     vy: Math.round(game.ball.vy * 10) / 10,
     radius: game.ball.radius,
-    trail: (game.ball.trail || []).slice(0, 5).map((point) => ({
+    trail: (game.ball.trail || []).slice(0, 2).map((point) => ({
       x: Math.round(point.x * 10) / 10,
       y: Math.round(point.y * 10) / 10
     }))
@@ -625,7 +625,7 @@ function compactGameState(game) {
     winner: game.winner,
     players,
     ball,
-    sparks: (game.sparks || []).slice(-16).map((spark) => ({
+    sparks: (game.sparks || []).slice(-6).map((spark) => ({
       x: Math.round(spark.x),
       y: Math.round(spark.y),
       vx: Math.round(spark.vx * 10) / 10,

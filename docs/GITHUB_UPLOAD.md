@@ -1,6 +1,6 @@
 # Upload and update Pixel Court on GitHub
 
-This guide covers both first-time upload and later updates.
+This guide covers first-time upload, later updates, conflict fixes, and how to test the game after updating.
 
 ## First-time upload to an empty GitHub repository
 
@@ -41,24 +41,121 @@ git remote add origin git@github.com:YOUR_USERNAME/pixel-court.git
 git push -u origin main
 ```
 
-Replace `YOUR_USERNAME` with your GitHub username. Replace `pixel-court` if you chose a different repository name.
+Replace `YOUR_USERNAME` with your GitHub username. Replace `pixel-court` if your repository has a different name.
 
-## Updating the repository after changes
+## Updating an existing GitHub repository with this new version
 
-After editing or replacing files with a newer Pixel Court version, run this from inside the project folder:
+Use this when your repository already exists and you are replacing older project files with the newest ZIP.
+
+### Step 1: Download and unzip the new project
+
+Download the newest Pixel Court ZIP and unzip it. Rename the unzipped new folder to something clear, for example:
+
+```text
+pixel-court-new
+```
+
+Open that new folder. You should see:
+
+```text
+README.md
+LICENSE
+package.json
+server.js
+public/
+docs/
+.gitignore
+```
+
+### Step 2: Open your existing local repo folder
+
+Find the folder that is already connected to GitHub. It is probably named:
+
+```text
+pixel-court
+```
+
+Do **not** delete this folder. It contains the hidden `.git` folder that connects it to GitHub.
+
+A reliable way to open the exact repo folder from Terminal is:
+
+```bash
+open .
+```
+
+Run that while Terminal is inside your repo folder. Paste the new files into that Finder window.
+
+### Step 3: Copy the new files into the existing repo
+
+Open `pixel-court-new`, select everything inside it, and copy it into your existing `pixel-court` repo folder.
+
+Replace files when your computer asks.
+
+Important: copy the **contents** of the new folder into the existing repo folder. Do not copy the folder itself inside the repo as `pixel-court/pixel-court-new`.
+
+### Step 4: Confirm you copied into the correct folder
+
+From Terminal inside the existing repo folder:
+
+```bash
+grep '"version"' package.json
+```
+
+Expected:
+
+```text
+"version": "1.5.0",
+```
+
+Also check the new graphics label:
+
+```bash
+grep -R "Performance Lock" public docs README.md package.json
+```
+
+If those commands do not show v1.5.0 / Performance Lock, the new files were copied into the wrong folder.
+
+### Step 5: Commit and push
+
+From inside your existing local repo folder:
 
 ```bash
 git status
 git add .
-git commit -m "Optimize Pixel Court for laptops"
+git commit -m "Fix Pixel Court performance and ball physics"
+git pull --rebase origin main
 git push
 ```
 
-Use a different commit message if you changed something else, for example:
+The `git pull --rebase origin main` step helps if GitHub has commits that your laptop does not have yet.
+
+## If Git reports conflicts during pull/rebase
+
+Because you are replacing project files with the newest build, the easiest safe approach is usually to keep your local new files.
+
+First check what is conflicted:
 
 ```bash
-git commit -m "Add class demo polish"
+git status
 ```
+
+If the conflicted files are project files you just replaced, keep your local version with:
+
+```bash
+git checkout --ours .
+git add .
+git rebase --continue
+git push
+```
+
+If Terminal opens `vim` during `git rebase --continue`:
+
+1. Press `Esc`.
+2. Type `:wq`.
+3. Press Enter.
+4. Then run `git push`.
+
+If you are not sure, run `git status` and check that `package.json` still says `1.5.0` before pushing.
 
 ## Pulling the update on another computer
 
@@ -92,7 +189,7 @@ npm start
 The terminal prints something like:
 
 ```text
-Pixel Court v1.3.0
+Pixel Court v1.5.0
 Local:   http://localhost:7777
 LAN:     http://192.168.1.24:7777
 ```
@@ -102,10 +199,11 @@ Use the **Local** URL on the host computer. Use the **LAN** URL for nearby playe
 For a quick solo test:
 
 1. Open `http://localhost:7777`.
-2. Confirm **Graphics** is set to **Laptop Optimized**.
+2. Confirm **Graphics** is set to **Performance Lock**.
 3. Click **AI Easy**.
 4. Click **Ready**.
 5. Click **Start Match**.
+6. Press `Esc` to pause, then press `Esc` again to resume.
 
 ## Option: Upload with GitHub CLI
 
@@ -122,7 +220,7 @@ Use `--private` instead of `--public` if you want a private repository.
 
 ## Suggested repository description
 
-> Animated LAN multiplayer browser tennis game with original fantasy pixel art, singles/doubles modes, AI opponents, tennis scoring, laptop-optimized graphics modes, and an authoritative Node.js WebSocket server.
+> Classroom-optimized LAN browser tennis game with original fantasy pixel art, singles/doubles modes, AI opponents, tennis scoring, and an authoritative Node.js WebSocket server.
 
 ## Suggested topics
 
@@ -133,17 +231,21 @@ browser-game pixel-art websocket lan multiplayer tennis nodejs canvas game-dev a
 ## Suggested release notes
 
 ```text
-Pixel Court v1.3.0
+Pixel Court v1.5.0
 
-- Laptop-first performance optimization.
-- Graphics selector: Laptop Optimized, Battery Saver, Fancy 60 FPS.
-- Cached Canvas world layers for smoother laptop play.
-- Reduced unnecessary live-match DOM updates.
-- LAN singles and doubles.
-- Vs Computer mode with Easy, Medium, and Hard AI.
+- Rescue performance pass for classroom laptops.
+- Default graphics mode: Performance Lock.
+- Low Power mode for older laptops.
+- 60 FPS active gameplay drawing in Performance Lock.
+- Lower internal Canvas resolution and cached scenery.
+- Server broadcasts every physics tick to remove visible ball stutter.
+- Client-side smoothing for ball/player motion.
+- Lowered net height and rebuilt shot physics for more natural clears.
+- Fixed ball freezing/sticking mid-air after net/out points.
+- Esc pause/resume for Vs Computer matches.
+- LAN Singles, LAN Doubles, and Vs Computer mode.
+- Easy, Medium, and Hard AI.
 - Tennis scoring: Love, 15, 30, 40, Deuce, Advantage, Game, Match.
-- Animated loading screen and animated main screen.
-- Procedural Canvas pixel art, no external art assets.
 ```
 
 ## Before class
@@ -157,10 +259,14 @@ npm start
 
 Then test:
 
+- Terminal prints **Pixel Court v1.5.0**.
 - Loading overlay appears and fades after connection.
 - Main screen shows **Pixel Court**.
-- Graphics dropdown defaults to **Laptop Optimized**.
+- Graphics dropdown defaults to **Performance Lock**.
 - AI Easy room can start and run smoothly.
+- `Esc` pauses and resumes the AI match.
+- Normal shots clear the net.
+- The ball does not appear stuck in the net or frozen mid-air after a point.
 - Singles room can be joined from another tab or another device.
 - Doubles room can seat four players/tabs.
 - HUD shows tennis points during play.

@@ -7,7 +7,7 @@
   <title>Pixel Court</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="booting">
+<body class="booting" data-graphics="laptop">
   <main class="shell">
     <section class="stage" aria-label="Game canvas">
       <canvas id="game" width="960" height="540"></canvas>
@@ -31,7 +31,7 @@
       <header class="brand">
         <div>
           <h1>Pixel Court</h1>
-          <p>Animated LAN pixel tennis in a glowing forest court</p>
+          <p>LAN pixel tennis in a glowing forest court</p>
         </div>
         <span id="version" class="version">v</span>
       </header>
@@ -44,11 +44,11 @@
       <label class="field graphics-field">
         <span>Graphics</span>
         <select id="graphicsQuality" aria-label="Graphics quality">
-          <option value="laptop">Laptop Optimized</option>
-          <option value="battery">Battery Saver</option>
+          <option value="laptop">Performance Lock</option>
+          <option value="battery">Low Power</option>
           <option value="fancy">Fancy 60 FPS</option>
         </select>
-        <small>Default is laptop-friendly: cached pixel layers, lower lobby FPS, same art direction.</small>
+        <small>Default for class: low internal resolution, cached scenery, smooth 60 FPS ball updates, minimal live effects during play.</small>
       </label>
 
       <label class="field">
@@ -94,7 +94,7 @@
 
       <section class="howto">
         <h2>Controls</h2>
-        <p><kbd>A</kbd>/<kbd>D</kbd> or arrows move. <kbd>W</kbd> jumps. <kbd>K</kbd>, <kbd>J</kbd>, <kbd>Space</kbd>, or <kbd>Enter</kbd> swings.</p>
+        <p><kbd>A</kbd>/<kbd>D</kbd> or arrows move. <kbd>W</kbd> jumps/lobs. <kbd>S</kbd> aims low. <kbd>K</kbd>, <kbd>J</kbd>, or <kbd>Space</kbd> swings. In AI mode, <kbd>Esc</kbd> pauses.</p>
         <p>Run the server on one computer, then nearby players open the LAN URL printed in the terminal. Computer mode works from the same page with one human player.</p>
       </section>
     </aside>

@@ -63,54 +63,66 @@ const courtDust = Array.from({ length: 28 }, () => ({
 const QUALITY_PROFILES = Object.freeze({
   laptop: {
     key: "laptop",
-    label: "Laptop Optimized",
-    targetFps: 45,
-    lobbyFps: 30,
+    label: "Performance Lock",
+    targetFps: 60,
+    lobbyFps: 20,
+    pausedFps: 6,
+    resolutionScale: 0.56,
     fullSceneEachFrame: false,
-    cloudCount: 4,
-    fireflyCount: 14,
-    courtDustCount: 12,
-    ambientBeamCount: 7,
-    lobbyCrystalCount: 12,
-    lobbySlimeCount: 6,
-    ballTrailLimit: 5,
-    sparkLimit: 42,
-    animateTorches: true,
-    animateNetVines: true
+    liveAtmosphereDuringMatch: false,
+    cloudCount: 0,
+    fireflyCount: 0,
+    courtDustCount: 0,
+    ambientBeamCount: 0,
+    lobbyCrystalCount: 5,
+    lobbySlimeCount: 2,
+    ballTrailLimit: 1,
+    sparkLimit: 4,
+    animateTorches: false,
+    animateNetVines: false,
+    smoothing: 0.9
   },
   battery: {
     key: "battery",
-    label: "Battery Saver",
+    label: "Low Power",
     targetFps: 30,
-    lobbyFps: 24,
+    lobbyFps: 12,
+    pausedFps: 4,
+    resolutionScale: 0.46,
     fullSceneEachFrame: false,
-    cloudCount: 2,
-    fireflyCount: 8,
-    courtDustCount: 6,
-    ambientBeamCount: 4,
-    lobbyCrystalCount: 8,
-    lobbySlimeCount: 4,
-    ballTrailLimit: 3,
-    sparkLimit: 24,
-    animateTorches: true,
-    animateNetVines: false
+    liveAtmosphereDuringMatch: false,
+    cloudCount: 0,
+    fireflyCount: 0,
+    courtDustCount: 0,
+    ambientBeamCount: 0,
+    lobbyCrystalCount: 3,
+    lobbySlimeCount: 1,
+    ballTrailLimit: 0,
+    sparkLimit: 0,
+    animateTorches: false,
+    animateNetVines: false,
+    smoothing: 1
   },
   fancy: {
     key: "fancy",
     label: "Fancy 60 FPS",
     targetFps: 60,
-    lobbyFps: 60,
+    lobbyFps: 45,
+    pausedFps: 15,
+    resolutionScale: 1,
     fullSceneEachFrame: true,
+    liveAtmosphereDuringMatch: true,
     cloudCount: clouds.length,
     fireflyCount: fireflies.length,
     courtDustCount: courtDust.length,
     ambientBeamCount: 15,
     lobbyCrystalCount: lobbyCrystals.length,
     lobbySlimeCount: lobbySlimes.length,
-    ballTrailLimit: 12,
-    sparkLimit: 90,
+    ballTrailLimit: 10,
+    sparkLimit: 60,
     animateTorches: true,
-    animateNetVines: true
+    animateNetVines: true,
+    smoothing: 0.82
   }
 });
 
@@ -127,12 +139,12 @@ export function getRenderQualityProfiles() {
 export function createRenderer(canvas, options = {}) {
   const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
   ctx.imageSmoothingEnabled = false;
-  canvas.width = WORLD.width;
-  canvas.height = WORLD.height;
 
   let quality = normalizeRenderQuality(options.quality);
   let profile = QUALITY_PROFILES[quality];
   let staticLayer = buildStaticLayer();
+  let visualGame = null;
+  configureCanvas(ctx, canvas, profile);
 
   return {
     setQuality(nextQuality) {
@@ -140,26 +152,111 @@ export function createRenderer(canvas, options = {}) {
       if (normalized === quality) return;
       quality = normalized;
       profile = QUALITY_PROFILES[quality];
+      visualGame = null;
+      configureCanvas(ctx, canvas, profile);
       staticLayer = buildStaticLayer();
     },
     getQuality() {
       return quality;
     },
-    getTargetFps(hasActiveGame = false) {
+    getProfile() {
+      return profile;
+    },
+    getTargetFps(hasActiveGame = false, paused = false) {
+      if (paused) return profile.pausedFps;
       return hasActiveGame ? profile.targetFps : profile.lobbyFps;
     },
     draw({ game, room, clientId, connected }) {
       ctx.save();
-      ctx.imageSmoothingEnabled = false;
-      const tick = game?.tick || performance.now() / 16.67;
+      prepareContext(ctx, profile);
+      visualGame = smoothVisualGame(visualGame, game, profile);
+      const drawableGame = visualGame || game;
+      const tick = drawableGame?.tick || performance.now() / 16.67;
       if (profile.fullSceneEachFrame) {
-        drawFullFrame(ctx, game, room, clientId, connected, tick, profile);
+        drawFullFrame(ctx, drawableGame, room, clientId, connected, tick, profile);
       } else {
-        drawCachedFrame(ctx, staticLayer, game, room, clientId, connected, tick, profile);
+        drawCachedFrame(ctx, staticLayer, drawableGame, room, clientId, connected, tick, profile);
       }
       ctx.restore();
     }
   };
+}
+
+function smoothVisualGame(visual, target, profile) {
+  if (!target) return null;
+  if (!visual || visual.phase !== target.phase || visual.mode !== target.mode || target.tick < visual.tick) {
+    return cloneVisualGame(target);
+  }
+
+  const alpha = Math.max(0, Math.min(1, profile.smoothing ?? 1));
+  copyGameMeta(visual, target);
+
+  if (target.ball) {
+    if (!visual.ball) visual.ball = { ...target.ball, trail: [...(target.ball.trail || [])] };
+    visual.ball.x = lerp(visual.ball.x, target.ball.x, alpha);
+    visual.ball.y = lerp(visual.ball.y, target.ball.y, alpha);
+    visual.ball.vx = target.ball.vx;
+    visual.ball.vy = target.ball.vy;
+    visual.ball.radius = target.ball.radius;
+    visual.ball.trail = target.ball.trail || [];
+  } else {
+    visual.ball = null;
+  }
+
+  const nextPlayers = {};
+  for (const [id, player] of Object.entries(target.players || {})) {
+    const existing = visual.players?.[id];
+    nextPlayers[id] = existing
+      ? {
+          ...player,
+          x: lerp(existing.x, player.x, alpha),
+          y: lerp(existing.y, player.y, alpha),
+          vx: player.vx,
+          vy: player.vy
+        }
+      : { ...player };
+  }
+  visual.players = nextPlayers;
+  visual.sparks = target.sparks || [];
+  return visual;
+}
+
+function cloneVisualGame(game) {
+  const clone = { ...game };
+  clone.ball = game.ball ? { ...game.ball, trail: [...(game.ball.trail || [])] } : null;
+  clone.players = {};
+  for (const [id, player] of Object.entries(game.players || {})) clone.players[id] = { ...player };
+  clone.sparks = game.sparks || [];
+  return clone;
+}
+
+function copyGameMeta(visual, target) {
+  for (const key of [
+    "version", "mode", "phase", "paused", "tick", "countdown", "message", "score", "games",
+    "points", "pointLabels", "tennisLabel", "gameScoreLabel", "matchTargetGames", "rally",
+    "longestRally", "winner"
+  ]) {
+    visual[key] = target[key];
+  }
+}
+
+function lerp(from, to, alpha) {
+  if (!Number.isFinite(from)) return to;
+  return from + (to - from) * alpha;
+}
+
+function configureCanvas(ctx, canvas, profile) {
+  const scale = profile.resolutionScale || 1;
+  canvas.width = Math.max(1, Math.round(WORLD.width * scale));
+  canvas.height = Math.max(1, Math.round(WORLD.height * scale));
+  canvas.style.aspectRatio = `${WORLD.width} / ${WORLD.height}`;
+  prepareContext(ctx, profile);
+}
+
+function prepareContext(ctx, profile) {
+  const scale = profile.resolutionScale || 1;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingEnabled = false;
 }
 
 function buildStaticLayer() {
@@ -197,7 +294,7 @@ function drawFullFrame(ctx, game, room, clientId, connected, tick, profile) {
 
 function drawCachedFrame(ctx, staticLayer, game, room, clientId, connected, tick, profile) {
   ctx.drawImage(staticLayer, 0, 0);
-  drawOptimizedAtmosphere(ctx, tick, profile);
+  if (!game || profile.liveAtmosphereDuringMatch) drawOptimizedAtmosphere(ctx, tick, profile);
 
   if (game) {
     drawBall(ctx, game.ball, tick, profile);
@@ -493,8 +590,7 @@ function drawNet(ctx, tick) {
     ctx.fillRect(xx, WORLD.netTop + 5, 2, WORLD.courtY - WORLD.netTop - 9);
   }
   ctx.fillStyle = "#2c8b47";
-  for (let i = 0; i < 7; i += 1) {
-    const yy = WORLD.netTop + i * 13;
+  for (let yy = WORLD.netTop + 7, i = 0; yy < WORLD.courtY - 8; yy += 13, i += 1) {
     const sway = Math.round(Math.sin(tick / 14 + i) * 2);
     ctx.fillRect(x - 67 + sway, yy, 5, 9);
     ctx.fillRect(x + 62 + sway, yy + 4, 5, 9);
@@ -575,8 +671,7 @@ function drawFirefliesOnly(ctx, tick, count) {
 function drawNetVinesOnly(ctx, tick) {
   const x = WORLD.centerX;
   ctx.fillStyle = "#2c8b47";
-  for (let i = 0; i < 7; i += 1) {
-    const yy = WORLD.netTop + i * 13;
+  for (let yy = WORLD.netTop + 7, i = 0; yy < WORLD.courtY - 8; yy += 13, i += 1) {
     const sway = Math.round(Math.sin(tick / 14 + i) * 2);
     ctx.fillRect(x - 67 + sway, yy, 5, 9);
     ctx.fillRect(x + 62 + sway, yy + 4, 5, 9);
@@ -782,6 +877,18 @@ function drawHud(ctx, game, room, clientId) {
     ctx.fillText("A/D move  W jump  K hit", WORLD.width - 176, 45);
   }
 
+  if (game.paused) {
+    pixelPanel(ctx, WORLD.centerX - 178, 152, 356, 104, "rgba(7, 10, 16, 0.94)", "#86e9ff");
+    ctx.textAlign = "center";
+    ctx.font = "18px monospace";
+    ctx.fillStyle = "#fff4c2";
+    ctx.fillText("PAUSED", WORLD.centerX, 188);
+    ctx.font = "10px monospace";
+    ctx.fillStyle = "#c9e8e0";
+    ctx.fillText("Press Esc to resume the AI match.", WORLD.centerX, 214);
+    ctx.fillText("Controls are frozen so the laptop can breathe.", WORLD.centerX, 232);
+  }
+
   if (game.phase === "matchOver") {
     pixelPanel(ctx, WORLD.centerX - 205, 156, 410, 122, "rgba(13, 11, 18, 0.92)", TEAM_META[game.winner ?? TEAM.LEFT].main);
     ctx.textAlign = "center";
@@ -830,7 +937,7 @@ function drawEmptyLobby(ctx, room, connected, tick, profile = QUALITY_PROFILES.f
     ctx.fillStyle = "#e3b8ff";
     ctx.fillText("Singles: 2 players  •  Doubles: 4 players  •  AI: Easy / Medium / Hard", WORLD.centerX, panelY + 78);
     ctx.fillStyle = Math.sin(tick / 18) > 0 ? "#86e9ff" : "#fff4c2";
-    ctx.fillText("Every tile, vine, sparkle, torch, and lobby critter is animated.", WORLD.centerX, panelY + 100);
+    ctx.fillText("Detailed pixel court, cached layers, and laptop-safe motion.", WORLD.centerX, panelY + 100);
   }
 
   drawLoadingRuneBar(ctx, WORLD.centerX - 180, panelY + 110, 360, 8, tick, connected);

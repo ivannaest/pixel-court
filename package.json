@@ -1,7 +1,7 @@
 {
   "name": "pixel-court",
-  "version": "1.3.0",
-  "description": "A laptop-optimized animated 2D browser tennis game with LAN multiplayer, singles, doubles, AI opponents, tennis scoring, and an original fantasy pixel-art court.",
+  "version": "1.5.0",
+  "description": "A performance-locked 2D browser tennis game with LAN multiplayer, singles, doubles, AI opponents, tennis scoring, and an original fantasy pixel-art court.",
   "type": "module",
   "main": "server.js",
   "scripts": {

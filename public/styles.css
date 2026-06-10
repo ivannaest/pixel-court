@@ -867,7 +867,7 @@ body.loaded .loading-overlay {
 }
 
 
-/* Laptop-first performance tuning. The default keeps the pixel-art look, but avoids costly full-page filters and huge animated shadows. */
+/* Classroom-first performance tuning. The default keeps the pixel-art look, but avoids costly full-page filters and huge animated shadows. */
 body[data-graphics="laptop"],
 body[data-graphics="battery"] {
   animation: none;
@@ -1058,4 +1058,114 @@ body[data-graphics="battery"] .loader-floor i {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* v1.5 performance lock: keep the pixel look, stop expensive browser effects during play. */
+.stage,
+.panel,
+.loading-overlay,
+.touch-controls {
+  contain: layout paint;
+}
+
+canvas {
+  contain: strict;
+  transform: translateZ(0);
+}
+
+body[data-graphics="laptop"] .stage::before,
+body[data-graphics="battery"] .stage::before {
+  display: none;
+}
+
+body[data-graphics="laptop"]::after,
+body[data-graphics="battery"]::after {
+  animation: none;
+}
+
+body[data-graphics="laptop"] .brand h1,
+body[data-graphics="laptop"] .brand h1::after,
+body[data-graphics="laptop"] .version,
+body[data-graphics="laptop"] .status-dot,
+body[data-graphics="laptop"] .ai-box,
+body[data-graphics="laptop"] .player-card,
+body[data-graphics="laptop"] .room-panel,
+body[data-graphics="laptop"] .howto {
+  animation: none;
+}
+
+body[data-graphics="laptop"] button::after,
+body[data-graphics="battery"] button::after {
+  animation: none;
+  opacity: 0;
+}
+
+body.in-match::before,
+body.in-match::after {
+  display: none;
+}
+
+body.in-match .panel::before,
+body.in-match .panel::after {
+  display: none;
+}
+
+body.in-match .brand h1,
+body.in-match .brand h1::after,
+body.in-match .version,
+body.in-match .status-dot,
+body.in-match button::after,
+body.in-match .ai-box,
+body.in-match .player-card,
+body.in-match .room-panel,
+body.in-match .howto {
+  animation: none !important;
+}
+
+body.is-paused canvas {
+  opacity: 0.92;
+}
+
+/* v1.5 rescue performance pass: make the default class mode extremely predictable. */
+body[data-graphics="laptop"],
+body[data-graphics="battery"] {
+  background: linear-gradient(180deg, #07101f, #11131d 58%, #0c0f15);
+}
+
+body.loaded .loading-overlay {
+  pointer-events: none;
+}
+
+body[data-graphics="laptop"] .loader-card,
+body[data-graphics="laptop"] .loader-logo span,
+body[data-graphics="laptop"] .loader-bar span,
+body[data-graphics="laptop"] .loader-floor i {
+  animation-duration: 1.7s;
+}
+
+body[data-graphics="laptop"].in-match *,
+body[data-graphics="laptop"].in-match *::before,
+body[data-graphics="laptop"].in-match *::after,
+body[data-graphics="battery"].in-match *,
+body[data-graphics="battery"].in-match *::before,
+body[data-graphics="battery"].in-match *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+body[data-graphics="laptop"].in-match button:hover:not(:disabled),
+body[data-graphics="battery"].in-match button:hover:not(:disabled) {
+  filter: none;
+  transform: none;
+}
+
+body[data-graphics="laptop"].in-match .stage,
+body[data-graphics="battery"].in-match .stage,
+body[data-graphics="laptop"].in-match .panel,
+body[data-graphics="battery"].in-match .panel {
+  box-shadow: 0 0 0 4px #8d744d, 0 10px 22px rgba(0,0,0,0.35);
+}
+
+body[data-graphics="battery"] canvas {
+  transform: none;
 }

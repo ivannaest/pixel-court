@@ -54,10 +54,15 @@ if (autoJoinCode) dom.joinCode.value = autoJoinCode;
 applyGraphicsQuality(renderer.getQuality(), false);
 
 connect();
-createInputController((input) => send("input", { input }));
+const inputController = createInputController((input) => {
+  if (shouldSendInput()) send("input", { input });
+});
 requestAnimationFrame(frame);
 
-window.addEventListener("beforeunload", () => send("leaveRoom"));
+window.addEventListener("beforeunload", () => {
+  inputController.destroy();
+  send("leaveRoom");
+});
 
 dom.createSingles.addEventListener("click", () => send("createRoom", { mode: "singles", name: currentName() }));
 dom.createDoubles.addEventListener("click", () => send("createRoom", { mode: "doubles", name: currentName() }));
@@ -76,6 +81,8 @@ dom.copy.addEventListener("click", copyInviteLink);
 if (dom.graphicsQuality) {
   dom.graphicsQuality.addEventListener("change", () => applyGraphicsQuality(dom.graphicsQuality.value));
 }
+
+document.addEventListener("keydown", handleShortcutKeys, { capture: true });
 
 dom.joinCode.addEventListener("input", () => {
   dom.joinCode.value = dom.joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -144,12 +151,15 @@ function handlePacket(packet) {
     case "roomState":
       state.room = packet.room;
       if (!packet.room || packet.room.phase === "lobby") state.game = null;
+      updateUiStateClasses();
       renderUi();
       break;
     case "gameState": {
       const previousPhase = state.game?.phase;
+      const previousPaused = state.game?.paused;
       state.game = packet.state;
-      if (state.game?.phase !== previousPhase || state.game?.phase === "matchOver") renderUi(false);
+      updateUiStateClasses();
+      if (state.game?.phase !== previousPhase || state.game?.paused !== previousPaused || state.game?.phase === "matchOver") renderUi(false);
       break;
     }
     case "notice":
@@ -197,6 +207,7 @@ function updateLoadingOverlay(connected, text) {
 }
 
 function renderUi(rebuildPlayers = true) {
+  updateUiStateClasses();
   const room = state.room;
   const me = currentRoomPlayer();
   const isHost = room?.hostId === state.clientId;
@@ -218,7 +229,7 @@ function renderUi(rebuildPlayers = true) {
     dom.hint.textContent = room.canStart
       ? "All players are in. Host can start the match."
       : room.mode === "ai"
-        ? "Ready up, then start. The CPU holds the Amethyst side."
+        ? "Ready up, then start. Press Esc during an AI match to pause/resume."
         : `${room.modeLabel} requires ${room.maxPlayers} ready player${room.maxPlayers > 1 ? "s" : ""}.`;
 
     if (rebuildPlayers) {
@@ -253,6 +264,28 @@ function renderUi(rebuildPlayers = true) {
 
 function createAiMatch(difficulty) {
   send("createAiRoom", { difficulty, name: currentName() });
+}
+
+function handleShortcutKeys(event) {
+  if (event.code !== "Escape") return;
+  if (!canPauseAiMatch()) return;
+  event.preventDefault();
+  event.stopPropagation();
+  send("togglePause");
+}
+
+function canPauseAiMatch() {
+  return state.room?.mode === "ai" && !!state.game && state.game.phase !== "matchOver";
+}
+
+function shouldSendInput() {
+  return !!state.room && !!state.game && !state.game.paused && state.game.phase !== "matchOver";
+}
+
+function updateUiStateClasses() {
+  const inMatch = !!state.game && state.game.phase !== "matchOver";
+  document.body.classList.toggle("in-match", inMatch);
+  document.body.classList.toggle("is-paused", !!state.game?.paused);
 }
 
 function currentRoomPlayer() {
@@ -299,21 +332,34 @@ function applyGraphicsQuality(value, announce = true) {
   }
 }
 
-let lastPaint = 0;
-let skippedPaints = 0;
+const perfWatch = { slowDraws: 0, autoLowered: false, lastFrameTime: 0 };
 
 function frame(now = performance.now()) {
-  const targetFps = renderer.getTargetFps(!!state.game);
-  const frameInterval = 1000 / targetFps;
-  const elapsed = now - lastPaint;
-  if (elapsed >= frameInterval || skippedPaints > 20) {
+  const hasActiveGame = !!state.game && state.game.phase !== "matchOver";
+  const targetFps = renderer.getTargetFps(hasActiveGame, !!state.game?.paused);
+  const frameInterval = 1000 / Math.max(1, targetFps);
+
+  if (!perfWatch.lastFrameTime || now - perfWatch.lastFrameTime >= frameInterval - 1) {
+    perfWatch.lastFrameTime = now;
+    const drawStart = performance.now();
     renderer.draw({ game: state.game, room: state.room, clientId: state.clientId, connected: state.connected });
-    lastPaint = now - (elapsed % frameInterval);
-    skippedPaints = 0;
-  } else {
-    skippedPaints += 1;
+    const drawMs = performance.now() - drawStart;
+    maybeAutoLowerGraphics(drawMs);
   }
+
   requestAnimationFrame(frame);
+}
+
+function maybeAutoLowerGraphics(drawMs) {
+  if (perfWatch.autoLowered || renderer.getQuality() !== "laptop" || !state.game || state.game.paused) return;
+  if (drawMs > 18) perfWatch.slowDraws += 1;
+  else perfWatch.slowDraws = Math.max(0, perfWatch.slowDraws - 1);
+
+  if (perfWatch.slowDraws >= 20) {
+    perfWatch.autoLowered = true;
+    applyGraphicsQuality("battery", false);
+    showToast("Auto-switched to Low Power for smoother play.");
+  }
 }
 
 function escapeHtml(value) {

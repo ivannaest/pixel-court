@@ -1,4 +1,4 @@
-export const VERSION = "1.3.0";
+export const VERSION = "1.5.0";
 
 export const WORLD = Object.freeze({
   width: 960,
@@ -7,10 +7,10 @@ export const WORLD = Object.freeze({
   courtRight: 864,
   courtY: 436,
   centerX: 480,
-  netTop: 346,
+  netTop: 382,
   netWidth: 10,
   tile: 16,
-  gravity: 0.42
+  gravity: 0.38
 });
 
 export const TEAM = Object.freeze({
@@ -47,7 +47,7 @@ export const AI_DIFFICULTIES = Object.freeze({
     label: "Easy",
     short: "EASY",
     reactionTicks: 28,
-    updateEveryTicks: 12,
+    updateEveryTicks: 16,
     positionError: 86,
     deadZone: 24,
     swingDistance: 39,
@@ -60,7 +60,7 @@ export const AI_DIFFICULTIES = Object.freeze({
     label: "Medium",
     short: "MED",
     reactionTicks: 16,
-    updateEveryTicks: 7,
+    updateEveryTicks: 10,
     positionError: 42,
     deadZone: 16,
     swingDistance: 45,
@@ -73,7 +73,7 @@ export const AI_DIFFICULTIES = Object.freeze({
     label: "Hard",
     short: "HARD",
     reactionTicks: 7,
-    updateEveryTicks: 3,
+    updateEveryTicks: 5,
     positionError: 14,
     deadZone: 9,
     swingDistance: 52,
@@ -121,36 +121,36 @@ export const MODES = Object.freeze({
 export const PLAYER = Object.freeze({
   width: 20,
   height: 42,
-  accel: 0.64,
-  airAccel: 0.34,
-  friction: 0.76,
-  maxSpeed: 5.1,
-  jumpPower: 10.2,
+  accel: 0.72,
+  airAccel: 0.38,
+  friction: 0.72,
+  maxSpeed: 5.4,
+  jumpPower: 10.6,
   swingFrames: 18,
-  swingCooldown: 28,
-  racketReach: 34,
-  racketRadius: 26
+  swingCooldown: 22,
+  racketReach: 40,
+  racketRadius: 34
 });
 
 export const BALL = Object.freeze({
   radius: 7,
   gravity: WORLD.gravity,
-  bounce: 0.74,
-  floorFriction: 0.985,
-  airDrag: 0.997,
-  maxSpeedX: 13.2,
-  maxSpeedY: 15.6,
+  bounce: 0.68,
+  floorFriction: 0.972,
+  airDrag: 0.998,
+  maxSpeedX: 12.4,
+  maxSpeedY: 15.0,
   hitCooldown: 8
 });
 
 export const MATCH = Object.freeze({
   winningGames: 3,
   winByGames: 2,
-  countdownTicks: 150,
-  pointPauseTicks: 110,
-  serveTicks: 95,
+  countdownTicks: 120,
+  pointPauseTicks: 46,
+  serveTicks: 70,
   tickRate: 60,
-  broadcastEveryTicks: 2
+  broadcastEveryTicks: 1
 });
 
 export const CONTROLS = Object.freeze({
@@ -158,7 +158,7 @@ export const CONTROLS = Object.freeze({
   right: ["ArrowRight", "KeyD"],
   jump: ["ArrowUp", "KeyW"],
   down: ["ArrowDown", "KeyS"],
-  swing: ["Space", "KeyK", "KeyJ", "Enter"]
+  swing: ["Space", "KeyK", "KeyJ"]
 });
 
 export function normalizeName(name) {

@@ -1,6 +1,6 @@
 # Architecture
 
-Pixel Court is intentionally small and dependency-free. It uses a Node.js server to host the browser files, coordinate LAN multiplayer over WebSockets, and run the computer opponent.
+Pixel Court is intentionally small and dependency-free. It uses a Node.js server to host the browser files, coordinate LAN multiplayer over WebSockets, run the authoritative match simulation, and drive the computer opponent.
 
 ## Runtime model
 
@@ -10,23 +10,24 @@ Browser clients  <--WebSocket JSON-->  Node server
       | Canvas renderer                  | Authoritative game loop
       | Input capture                    | Room + lobby state
       | Lobby UI                         | Physics + tennis scoring
-      |                                  | Computer-opponent input
+      | Graphics profile                 | Computer-opponent input
 ```
 
-The browser never decides the match result. Clients send input only. The server owns player positions, ball velocity, CPU decisions, scoring, point pauses, match winner, and broadcasts the latest state.
+The browser never decides the match result. Clients send input only. The server owns player positions, ball velocity, CPU decisions, net/out/bounce calls, scoring, point pauses, match winner, and pause state for AI matches.
 
 ## Why a server is required for LAN
 
-Browsers cannot accept inbound socket connections on their own. A nearby computer must run the Node server so other devices can connect to it through the local network. This also gives the game one authoritative simulation source, which avoids every client disagreeing about ball bounces.
+Browsers cannot accept inbound socket connections on their own. A nearby computer must run the Node server so other devices can connect to it through the local network. This also gives the game one authoritative simulation source, which avoids clients disagreeing about ball bounces or scoring.
 
 ## Important files
 
 - `server.js`
   - Serves files from `public/`.
   - Implements a minimal WebSocket server using Node's built-in `http`, `net`, and `crypto` capabilities.
-  - Manages rooms, room codes, seats, readiness, host permissions, bots, and disconnects.
-  - Runs the 60 FPS authoritative simulation loop.
+  - Manages rooms, room codes, seats, readiness, host permissions, bots, disconnects, and AI pause.
+  - Runs the 60-tick authoritative simulation loop.
   - Injects AI input packets for CPU players before each simulation tick.
+  - Broadcasts compact render-state packets to reduce browser JSON work.
 
 - `public/src/shared/constants.js`
   - Shared world size, team data, mode definitions, AI difficulty definitions, player physics constants, ball constants, match rules, and controls.
@@ -34,26 +35,31 @@ Browsers cannot accept inbound socket connections on their own. A nearby compute
 - `public/src/shared/ai.js`
   - Creates basic computer-opponent input.
   - Predicts a rough landing position, applies difficulty-based error/reaction settings, and chooses movement, jump, slice, and swing actions.
+  - Uses trimmed prediction work so hosting AI mode stays light on laptops.
 
 - `public/src/shared/physics.js`
   - Shared simulation logic imported by the server and safe for browser use.
-  - Handles movement, jumps, swings, racket collisions, net hits, ball bounces, tennis scoring, serving, sparks, and match completion.
+  - Handles movement, jumps, swings, racket collisions, swept net checks, ball bounces, tennis scoring, serving, sparks, point pauses, and match completion.
+  - Moves the dead ball away from the net after net points so it does not look stuck.
 
 - `public/src/client.js`
   - Connects to the WebSocket server.
-  - Sends input packets.
-  - Updates lobby controls, loading overlay state, and room/player state.
+  - Sends input packets only while a match is active and useful.
+  - Updates lobby controls, loading overlay state, room/player state, and body performance classes.
   - Offers Singles, Doubles, AI difficulty buttons, and the Graphics quality selector.
-  - Throttles canvas painting based on the selected graphics mode instead of forcing every `requestAnimationFrame` to draw.
+  - Handles `Esc` pause/resume for Vs Computer matches.
+  - Throttles Canvas painting to the selected graphics FPS while keeping the active-match render path smooth.
 
 - `public/src/renderer.js`
   - Draws the full pixel-art game world with Canvas.
   - Uses only procedural rectangles, lines, panels, and generated decorative objects.
-  - Draws the animated main screen, demo rally, loading/status visuals, tennis score HUD, and CPU visual details.
-  - Uses a cached static scene for Laptop Optimized and Battery Saver modes so expensive tile/forest/court layers are drawn once and reused.
+  - Draws the animated main screen, demo rally, loading/status visuals, tennis score HUD, pause overlay, and CPU visual details.
+  - Uses a cached static scene for Performance Lock and Low Power modes so expensive tile/forest/court layers are drawn once and reused.
+  - Lowers Canvas backing resolution in laptop modes while preserving the 16:9 pixel-art composition.
 
 - `public/src/input.js`
   - Maps keyboard and touch controls to compact input packets.
+  - Ignores movement keys while typing in inputs/select boxes.
 
 ## Network packets
 
@@ -67,18 +73,21 @@ Client to server:
 { "type": "joinRoom", "code": "ABCD", "name": "Ivanna" }
 { "type": "ready", "ready": true }
 { "type": "startMatch" }
+{ "type": "togglePause" }
 { "type": "input", "input": { "left": false, "right": true, "jump": false, "down": false, "swing": true } }
 ```
 
 Server to client:
 
 ```json
-{ "type": "welcome", "playerId": "p_...", "version": "1.3.0" }
-{ "type": "roomState", "room": { "code": "ABCD", "mode": "ai", "aiDifficulty": "medium" } }
-{ "type": "gameState", "state": { "phase": "playing", "games": [0, 0], "points": [1, 0], "tennisLabel": "15-Love" } }
+{ "type": "welcome", "playerId": "p_...", "version": "1.5.0" }
+{ "type": "roomState", "room": { "code": "ABCD", "mode": "ai", "paused": false, "aiDifficulty": "medium" } }
+{ "type": "gameState", "state": { "phase": "playing", "paused": false, "games": [0, 0], "points": [1, 0], "tennisLabel": "15-Love" } }
 { "type": "notice", "text": "Joined room ABCD." }
 { "type": "error", "text": "Only the room host can start the match." }
 ```
+
+The server broadcasts a compact game state rather than the full simulation object. Clients receive only render-needed fields for players, ball, sparks, score, phase, and messages.
 
 ## Seats and modes
 
@@ -101,17 +110,20 @@ Vs Computer:
 1. Moss Human
 2. Amethyst AI
 
-For Singles and Doubles, the first players to join get seats. Extra clients become spectators. For Vs Computer, the first human gets the Moss seat, the generated CPU gets the Amethyst seat, and extra human clients become spectators. If the host disconnects and another human is present, the remaining human becomes host; otherwise the room is removed.
+For Singles and Doubles, the first players to join get seats. Extra clients become spectators. For Vs Computer, the first human gets the Moss seat, the generated CPU gets the Amethyst seat, and extra human clients become spectators.
 
 ## Game loop
 
-The server runs at `MATCH.tickRate`, currently 60 ticks per second.
+The server runs at `MATCH.tickRate`, currently 60 simulation ticks per second.
 
-1. Gather the latest input for each seated human player.
-2. Generate input for seated CPU players with `createAiInput`.
-3. Simulate one physics tick.
-4. Broadcast game state every `MATCH.broadcastEveryTicks`, currently every 2 ticks.
-5. Continue until match over or room teardown.
+1. Skip simulation if the room is paused.
+2. Gather the latest input for each seated human player.
+3. Generate input for seated CPU players with `createAiInput`.
+4. Simulate one physics tick.
+5. Broadcast compact game state every `MATCH.broadcastEveryTicks`, currently every tick for smooth ball motion.
+6. Continue until match over or room teardown.
+
+The server continues to simulate at 60 ticks per second for consistent physics, while browsers paint according to their selected Graphics setting.
 
 ## Tennis scoring model
 
@@ -131,7 +143,7 @@ The AI is intentionally lightweight:
 
 - Easy has slower reaction, larger prediction error, and lower swing reliability.
 - Medium reduces error and reacts more consistently.
-- Hard updates frequently, positions tightly, and jumps/swings more aggressively.
+- Hard updates more often, positions tightly, and jumps/swings more aggressively.
 
 The AI does not cheat by changing the physics outcome. It only produces the same input shape as a human client: left, right, jump, down, and swing.
 
@@ -147,19 +159,26 @@ The renderer is procedural. It draws:
 - Vines, torches, banners, crystals, mushrooms, and fireflies
 - Pixel players, CPU visor details, and rackets
 - Glowing ball, trail, sparks, and tennis-score HUD panels
+- Pause overlay for AI mode
 - Animated loading/main-screen details: title plaque, demo rally, slime spectators, crystal glow, menu cards, and rune bar
 
 Because the renderer is procedural, the repo stays tiny and has no image licensing baggage.
 
-## Laptop optimization model
+## Classroom optimization model
 
-The current build is designed for classroom laptops by default. The Graphics dropdown maps to renderer/CSS profiles:
+The current build is designed for class laptops by default. The Graphics dropdown maps to renderer/CSS profiles:
 
-- **Laptop Optimized**: default; cached static world layer, 45 FPS gameplay target, 30 FPS lobby target, fewer live particles, lighter full-page CSS motion.
-- **Battery Saver**: cached static world layer, 30 FPS gameplay target, fewer trails/sparks/particles, minimal CSS animation.
-- **Fancy 60 FPS**: original full-scene redraw path, 60 FPS target, all particles and decorative motion.
+- **Performance Lock**: default; lower Canvas backing resolution, cached static world layer, 60 FPS gameplay draw target, 20 FPS lobby target, reduced live particles, active-match CSS animation disabled.
+- **Low Power**: very small Canvas backing store, 30 FPS gameplay draw target, 12 FPS lobby target, minimal decorative motion.
+- **Fancy 60 FPS**: high-detail redraw path for strong computers.
 
-The game logic still simulates on the server at 60 ticks per second. Graphics mode only changes how often and how heavily each browser paints the scene. That means a slower laptop can choose Battery Saver without changing scoring, physics, or fairness.
+Graphics mode only changes how often and how heavily each browser paints the scene. Scoring and physics still come from the server, so slower laptops can choose Low Power without changing match rules.
+
+## Loading and main screen
+
+The browser shell contains a CSS-driven loading overlay in `public/index.html` and `public/styles.css`. It appears while the WebSocket connection is not ready and fades once the client connects. The overlay includes crystal blocks, a moving loading bar, and a pixel terrain strip.
+
+The main screen is drawn in `public/src/renderer.js` whenever no match state is active. It still renders the world behind the menu, then layers on a title plaque, demo rally, slime spectators, glowing crystals, mode cards, and a status bar. Lower graphics modes reduce how often this scene repaints, not the overall art direction.
 
 ## Extending the game
 
@@ -170,10 +189,3 @@ Good next changes:
 - Add room options for match length and serve style.
 - Add a replay or highlight trail.
 - Add team color customization while keeping the seat/team model intact.
-
-
-## Loading and main screen
-
-The browser shell contains a CSS-driven loading overlay in `public/index.html` and `public/styles.css`. It appears while the WebSocket connection is not ready and fades once the client connects. The overlay includes bouncing crystal blocks, a moving loading bar, and a pixel terrain strip.
-
-The main screen is drawn in `public/src/renderer.js` whenever no match state is active. It still renders the world behind the menu, then layers on a title plaque, animated demo rally, hopping slime spectators, glowing crystals, mode cards, and a status bar. This keeps the lobby visually alive instead of showing a static menu.

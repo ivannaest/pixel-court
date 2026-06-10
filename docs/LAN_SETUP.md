@@ -11,6 +11,7 @@ npm start
 The terminal prints something like:
 
 ```text
+Pixel Court v1.5.0
 Local:   http://localhost:7777
 LAN:     http://192.168.1.24:7777
 ```
@@ -22,9 +23,11 @@ Use `localhost` only on the host computer. Other players must use the LAN addres
 Computer mode still runs through the local server, but it only needs one browser:
 
 1. Open the local URL.
-2. Click **AI Easy**, **AI Medium**, or **AI Hard**.
-3. Click **Ready**.
-4. Click **Start Match**.
+2. Confirm **Graphics** is set to **Performance Lock**.
+3. Click **AI Easy**, **AI Medium**, or **AI Hard**.
+4. Click **Ready**.
+5. Click **Start Match**.
+6. Press `Esc` to pause/resume if you need to stop during play.
 
 No other LAN device is required for this mode.
 
@@ -34,6 +37,14 @@ No other LAN device is required for this mode.
 2. Open the LAN URL in a browser.
 3. Enter the room code shown in the host's lobby, or use **Copy Invite** from the host.
 4. Ready up.
+
+## Classroom performance settings
+
+- Keep **Graphics** on **Performance Lock** for regular laptops.
+- Use **Low Power** on older laptops or laptops in low-power mode.
+- Avoid **Fancy 60 FPS** unless the laptop is clearly strong enough.
+- Close extra tabs, video calls, screen recorders, and large downloads.
+- If hosting multiplayer, use the strongest available laptop for the server.
 
 ## Firewall troubleshooting
 
@@ -52,12 +63,3 @@ node server.js --port=8080
 ## Public internet warning
 
 This game is intended for trusted local networks. Do not expose the server directly to the public internet without adding production-grade security, rate limiting, HTTPS, and authentication.
-
-## Recommended play conditions
-
-- Use a stable Wi-Fi network or wired Ethernet.
-- Keep all players geographically nearby on the same LAN.
-- Close heavy downloads or video streams if ball movement feels delayed.
-- Host on the fastest computer available.
-- For classroom laptops, leave **Graphics** set to **Laptop Optimized**.
-- If one player's laptop is still laggy, that player can switch only their browser to **Battery Saver** without affecting the match rules or other players.

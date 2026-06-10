@@ -1,68 +1,100 @@
-# Performance guide
+# Pixel Court Performance Guide
 
-Pixel Court is meant to run in a classroom where most players are on laptops. The default graphics mode is now **Laptop Optimized**.
+Pixel Court v1.5.0 is tuned for classroom laptops. The default graphics mode is **Performance Lock**.
 
-## Recommended class setup
+## Why the game should run on a normal laptop
 
-1. Start the game with `npm start`.
-2. Open `http://localhost:7777` on the host laptop.
-3. Leave **Graphics** set to **Laptop Optimized**.
-4. Ask other players to use the same setting when they join from the LAN URL.
-5. If a device still feels laggy, change only that device to **Battery Saver**.
+Pixel Court is a 2D Canvas game with a small Node.js LAN server. A machine such as an Apple M2 MacBook Pro with 8 GB RAM should run it comfortably. If it feels laggy, the issue is almost certainly the project version, browser rendering path, or game-loop/physics behavior, not the laptop being too weak.
 
-Graphics mode is per-browser and saved in `localStorage`, so each laptop can choose its own setting.
+## What changed in v1.5.0
+
+- **Performance Lock is now the default.** It keeps the pixel-art style but removes expensive live effects during matches.
+- **Gameplay drawing targets 60 FPS** in Performance Lock so the ball feels smooth.
+- **Internal Canvas resolution is lower** than the displayed size. This preserves the pixel-art look and reduces GPU/CPU cost.
+- **Static scenery is cached.** The forest, terrain, court, banners, and net are drawn once into an offscreen layer and reused.
+- **Server broadcasts every physics tick.** The old low-frequency packets made the ball look like it was snapping or freezing.
+- **Client-side visual smoothing** reduces packet-to-packet jumps.
+- **The net is lower and more playable.** Normal returns now clear it instead of clipping constantly.
+- **Dead balls settle on the court.** The ball should not freeze mid-air or look stuck in the net after a point.
+- **CSS animation stops during matches** in Performance Lock and Low Power.
 
 ## Graphics modes
 
-| Mode | Target | Details |
+| Mode | Use it for | Details |
 | --- | --- | --- |
-| Laptop Optimized | Most laptops | Cached world layer, 45 FPS gameplay target, 30 FPS lobby target, reduced live particles, lighter page animations. |
-| Battery Saver | Older laptops or low battery | Cached world layer, 30 FPS gameplay target, fewer sparks/trails/particles, minimal heavy CSS motion. |
-| Fancy 60 FPS | Strong computers | Full per-frame scene redraw with all decorative animation. |
+| Performance Lock | Default classroom play | Cached scenery, low internal resolution, 60 FPS gameplay draw target, tiny effects, no live-match CSS animation. |
+| Low Power | Older/low-battery laptops | Lower internal resolution, 30 FPS gameplay draw target, almost no trails/sparks/effects. |
+| Fancy 60 FPS | Stronger machines | Full animated scene, more particles, higher effect counts. |
 
-## What was optimized
+## Recommended class setup
 
-- The expensive background, terrain, court, tile, vine, banner, and base decoration layer is cached in Laptop Optimized and Battery Saver modes.
-- The browser no longer redraws the entire procedural world from scratch every animation frame unless **Fancy 60 FPS** is selected.
-- The lobby renders at a lower target FPS than active gameplay in the laptop profiles.
-- Canvas paint timing is throttled by profile instead of blindly drawing on every `requestAnimationFrame`.
-- Live decorative effects now have per-profile limits for clouds, fireflies, court dust, ball trails, and sparks.
-- The client avoids unnecessary DOM updates for every incoming game-state packet.
-- Expensive full-page CSS effects are calmer in Laptop Optimized and mostly disabled in Battery Saver.
-- The local server sends `Cache-Control: no-cache` so browsers pick up project updates quickly during class testing.
+1. Start the server with `npm start`.
+2. Open `http://localhost:7777` on the host laptop.
+3. Confirm the terminal says `Pixel Court v1.5.0`.
+4. Confirm **Graphics** says **Performance Lock**.
+5. Test **AI Easy** before class.
+6. For very weak laptops, switch only that laptop to **Low Power**.
 
-## Troubleshooting lag
+## Common causes of lag
 
-Start with these steps:
+### Old files are still running
+
+If the browser or terminal still says `v1.4.0`, `v1.3.0`, or the graphics menu still says **Classroom Smooth**, the new optimized files were not copied into the repo folder that Node is running.
+
+Check from the project folder:
 
 ```bash
+grep '"version"' package.json
+```
+
+Expected:
+
+```text
+"version": "1.5.0",
+```
+
+### Browser cache
+
+Hard refresh after updating:
+
+```text
+Mac: Cmd + Shift + R
+Windows/Linux: Ctrl + F5
+```
+
+### Fancy mode is selected
+
+Use **Performance Lock** for class. Fancy mode is intentionally more animated.
+
+### Laptop is in low-power mode
+
+Some laptops reduce browser performance on battery. Plugging in helps, but **Low Power** mode should still be usable.
+
+### Too many tabs/apps are open
+
+For class demos, close video calls, heavy browser tabs, and screen recorders if possible.
+
+## Smoothness expectations
+
+- The ball should move continuously, not snap every few frames.
+- Normal returns should clear the net.
+- Net points should end cleanly; the ball should settle on the court.
+- Pressing **Esc** during an AI match should pause/resume immediately.
+
+## Before presenting
+
+Run:
+
+```bash
+npm run check
 npm start
 ```
 
-Open:
+Then test:
 
-```text
-http://localhost:7777
-```
-
-Then in the lobby:
-
-1. Set **Graphics** to **Laptop Optimized**.
-2. Close extra browser tabs.
-3. Keep the browser zoom at 100% or lower.
-4. If it still lags, switch to **Battery Saver**.
-5. Restart the browser before class if the laptop has been running for a long time.
-
-For LAN multiplayer, only one computer runs the server. The other laptops only open the LAN URL in a browser.
-
-## Things that can still slow laptops down
-
-- Running the server, browser, screen recording, and video calls all on the same laptop.
-- Very old integrated graphics chips.
-- Browser extensions that inject scripts into every page.
-- Huge display scaling or very high browser zoom.
-- Low-power battery mode at the operating-system level.
-
-## Keeping the aesthetic
-
-The optimized modes still keep the same court, terrain, torches, crystals, slimes, fireflies, glow colors, HUD panels, and pixel-art layout. The trade-off is mostly that some background details update less often or in smaller counts. Gameplay readability and style should remain intact.
+1. Open `http://localhost:7777`.
+2. Select **Performance Lock**.
+3. Click **AI Easy**.
+4. Click **Ready**.
+5. Click **Start Match**.
+6. Move with `A`/`D`, swing with Space or `K`, and press `Esc` to pause.

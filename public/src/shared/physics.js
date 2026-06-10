@@ -288,9 +288,9 @@ function launchServe(state, server) {
   state.ball.lastBounceSide = null;
   state.ball.bouncesOnSide = 0;
   state.ball.hitCooldown = BALL.hitCooldown;
-  state.ball.vx = dir * 8.4;
-  state.ball.vy = -8.1;
-  burst(state, state.ball.x, state.ball.y, TEAM_META[servingTeam].glow, 10);
+  state.ball.vx = dir * 9.1;
+  state.ball.vy = -8.9;
+  burst(state, state.ball.x, state.ball.y, TEAM_META[servingTeam].glow, 6);
 }
 
 function stepBall(state, inputsByPlayer) {
@@ -307,8 +307,15 @@ function stepBall(state, inputsByPlayer) {
   ball.vx = clamp(ball.vx, -BALL.maxSpeedX, BALL.maxSpeedX);
   ball.vy = clamp(ball.vy, -BALL.maxSpeedY, BALL.maxSpeedY);
 
+  if (!Number.isFinite(ball.x) || !Number.isFinite(ball.y) || !Number.isFinite(ball.vx) || !Number.isFinite(ball.vy)) {
+    awardPoint(state, oppositeTeam(ball.lastTouchTeam ?? sideForX(WORLD.centerX)), "The comet fizzled out");
+    return;
+  }
+
   checkRacketHits(state, inputsByPlayer);
+  if (state.phase !== "playing") return;
   checkNet(state);
+  if (state.phase !== "playing") return;
   checkGroundAndBounds(state);
 }
 
@@ -338,14 +345,17 @@ function checkRacketHits(state, inputsByPlayer) {
 
     if (distSq <= radius * radius) {
       const dir = signForTeam(player.team);
-      const upward = input.down ? -5.1 : input.jump ? -9.7 : -7.3;
-      const speed = (input.down ? 7.7 : 8.6) + Math.min(2.8, Math.abs(player.vx) * 0.46) + Math.min(1.2, state.rally * 0.04);
-      const slotSlice = state.mode === "doubles" && player.slot === 1 ? 0.8 : 0;
-      ball.x = racketX + dir * (BALL.radius + 2);
-      ball.y = racketY - 2;
-      ball.vx = dir * (speed + slotSlice) + player.vx * 0.32;
-      ball.vy = upward + Math.abs(player.vx) * -0.08;
-      ball.spin = dir * (input.down ? -0.36 : 0.24) + player.vx * 0.015;
+      const isLob = !!input.jump;
+      const isSlice = !!input.down;
+      const baseSpeed = isSlice ? 10.8 : isLob ? 8.2 : 9.7;
+      const upward = isSlice ? -7.8 : isLob ? -10.9 : -9.4;
+      const speed = baseSpeed + Math.min(1.2, Math.abs(player.vx) * 0.22) + Math.min(0.7, state.rally * 0.025);
+      const slotSlice = state.mode === "doubles" && player.slot === 1 ? 0.45 : 0;
+      ball.x = racketX + dir * (BALL.radius + 4);
+      ball.y = Math.min(racketY - 2, WORLD.netTop - 8);
+      ball.vx = dir * (speed + slotSlice) + player.vx * 0.16;
+      ball.vy = upward;
+      ball.spin = dir * (isSlice ? -0.28 : 0.18) + player.vx * 0.01;
       ball.lastTouchTeam = player.team;
       ball.lastTouchPlayer = player.id;
       ball.lastBounceSide = null;
@@ -355,7 +365,7 @@ function checkRacketHits(state, inputsByPlayer) {
       state.longestRally = Math.max(state.longestRally, state.rally);
       player.rallyHits += 1;
       player.sweat = 18;
-      burst(state, ball.x, ball.y, TEAM_META[player.team].glow, 5 + Math.min(5, state.rally));
+      burst(state, ball.x, ball.y, TEAM_META[player.team].glow, 3 + Math.min(4, state.rally));
       pushEvent(state, `${player.name} returns the comet ${state.rally}`);
       return;
     }
@@ -459,11 +469,9 @@ function settleBallAfterPoint(state, awardedTeam, reason) {
   const sideDir = awardedTeam === TEAM.LEFT ? -1 : 1;
   const wasNet = /net/i.test(reason);
   ball.x = wasNet
-    ? WORLD.centerX + sideDir * 84
+    ? WORLD.centerX + sideDir * 58
     : clamp(ball.x, WORLD.courtLeft + 32, WORLD.courtRight - 32);
-  ball.y = wasNet
-    ? WORLD.netTop - 30
-    : clamp(ball.y, WORLD.courtY - 84, WORLD.courtY - BALL.radius);
+  ball.y = WORLD.courtY - BALL.radius;
   ball.vx = 0;
   ball.vy = 0;
   ball.spin = 0;
@@ -516,7 +524,7 @@ function pointName(points) {
 }
 
 function burst(state, x, y, color, count) {
-  const limitedCount = Math.max(0, Math.min(count, 14));
+  const limitedCount = Math.max(0, Math.min(count, 8));
   for (let i = 0; i < limitedCount; i += 1) {
     const angle = (i / Math.max(1, limitedCount)) * Math.PI * 2 + (state.tick % 11) * 0.11;
     const speed = 0.7 + ((i * 37) % 11) / 8;
@@ -529,7 +537,7 @@ function burst(state, x, y, color, count) {
       life: 16 + ((i * 13) % 18)
     });
   }
-  state.sparks = state.sparks.slice(-36);
+  state.sparks = state.sparks.slice(-18);
 }
 
 function pushEvent(state, text) {
