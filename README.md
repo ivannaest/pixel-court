@@ -180,21 +180,6 @@ npm start
 
 Then open `http://localhost:7777`, start an AI Easy match, confirm **Sharp Performance** is selected, press **Esc** to pause/resume, and make sure the game feels smooth.
 
-## Updating GitHub
-
-The full guide is in [`docs/GITHUB_UPLOAD.md`](docs/GITHUB_UPLOAD.md).
-
-For an existing GitHub repository, copy the new project files into your local repo folder, then run:
-
-```bash
-git status
-git add .
-git commit -m "Sharpen Pixel Court graphics"
-git pull --rebase origin main
-git push
-```
-
-If Git says there are conflicts, resolve them, run `git add .`, then `git rebase --continue`, and finally `git push`.
 
 ## License
 
