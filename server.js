@@ -96,7 +96,7 @@ function handleHttpRequest(req, res) {
   const extension = path.extname(filePath).toLowerCase();
   res.writeHead(200, {
     "Content-Type": MIME[extension] || "application/octet-stream",
-    "Cache-Control": extension === ".html" ? "no-cache" : "public, max-age=3600"
+    "Cache-Control": "no-cache"
   });
   createReadStream(filePath).pipe(res);
 }

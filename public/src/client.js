@@ -1,6 +1,6 @@
 import { AI_DIFFICULTIES, VERSION, normalizeName } from "./shared/constants.js";
 import { createInputController } from "./input.js";
-import { createRenderer } from "./renderer.js";
+import { createRenderer, normalizeRenderQuality } from "./renderer.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -28,10 +28,11 @@ const dom = {
   hint: $("hint"),
   toast: $("toast"),
   loadingOverlay: $("loadingOverlay"),
-  loadingText: $("loadingText")
+  loadingText: $("loadingText"),
+  graphicsQuality: $("graphicsQuality")
 };
 
-const renderer = createRenderer(dom.canvas);
+const renderer = createRenderer(dom.canvas, { quality: initialGraphicsQuality() });
 const params = new URLSearchParams(window.location.search);
 const autoJoinCode = (params.get("room") || "").trim().toUpperCase();
 
@@ -50,6 +51,7 @@ const state = {
 dom.version.textContent = `v${VERSION}`;
 dom.playerName.value = normalizeName(localStorage.getItem("pixelCourtName") || randomPlayerName());
 if (autoJoinCode) dom.joinCode.value = autoJoinCode;
+applyGraphicsQuality(renderer.getQuality(), false);
 
 connect();
 createInputController((input) => send("input", { input }));
@@ -70,6 +72,10 @@ dom.ready.addEventListener("click", () => {
 dom.start.addEventListener("click", () => send("startMatch"));
 dom.leave.addEventListener("click", () => send("leaveRoom"));
 dom.copy.addEventListener("click", copyInviteLink);
+
+if (dom.graphicsQuality) {
+  dom.graphicsQuality.addEventListener("change", () => applyGraphicsQuality(dom.graphicsQuality.value));
+}
 
 dom.joinCode.addEventListener("input", () => {
   dom.joinCode.value = dom.joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -140,10 +146,12 @@ function handlePacket(packet) {
       if (!packet.room || packet.room.phase === "lobby") state.game = null;
       renderUi();
       break;
-    case "gameState":
+    case "gameState": {
+      const previousPhase = state.game?.phase;
       state.game = packet.state;
-      renderUi(false);
+      if (state.game?.phase !== previousPhase || state.game?.phase === "matchOver") renderUi(false);
       break;
+    }
     case "notice":
       showToast(packet.text);
       break;
@@ -275,8 +283,36 @@ function showToast(text, isError = false) {
   showToast.timer = window.setTimeout(() => dom.toast.classList.remove("show"), 2800);
 }
 
-function frame() {
-  renderer.draw({ game: state.game, room: state.room, clientId: state.clientId, connected: state.connected });
+function initialGraphicsQuality() {
+  return normalizeRenderQuality(localStorage.getItem("pixelCourtGraphics") || "laptop");
+}
+
+function applyGraphicsQuality(value, announce = true) {
+  const quality = normalizeRenderQuality(value);
+  renderer.setQuality(quality);
+  document.body.dataset.graphics = quality;
+  localStorage.setItem("pixelCourtGraphics", quality);
+  if (dom.graphicsQuality) dom.graphicsQuality.value = quality;
+  if (announce) {
+    const label = dom.graphicsQuality?.selectedOptions?.[0]?.textContent || quality;
+    showToast(`Graphics set to ${label}.`);
+  }
+}
+
+let lastPaint = 0;
+let skippedPaints = 0;
+
+function frame(now = performance.now()) {
+  const targetFps = renderer.getTargetFps(!!state.game);
+  const frameInterval = 1000 / targetFps;
+  const elapsed = now - lastPaint;
+  if (elapsed >= frameInterval || skippedPaints > 20) {
+    renderer.draw({ game: state.game, room: state.room, clientId: state.clientId, connected: state.connected });
+    lastPaint = now - (elapsed % frameInterval);
+    skippedPaints = 0;
+  } else {
+    skippedPaints += 1;
+  }
   requestAnimationFrame(frame);
 }
 

@@ -43,12 +43,14 @@ Browsers cannot accept inbound socket connections on their own. A nearby compute
   - Connects to the WebSocket server.
   - Sends input packets.
   - Updates lobby controls, loading overlay state, and room/player state.
-  - Offers Singles, Doubles, and AI difficulty buttons.
+  - Offers Singles, Doubles, AI difficulty buttons, and the Graphics quality selector.
+  - Throttles canvas painting based on the selected graphics mode instead of forcing every `requestAnimationFrame` to draw.
 
 - `public/src/renderer.js`
   - Draws the full pixel-art game world with Canvas.
   - Uses only procedural rectangles, lines, panels, and generated decorative objects.
   - Draws the animated main screen, demo rally, loading/status visuals, tennis score HUD, and CPU visual details.
+  - Uses a cached static scene for Laptop Optimized and Battery Saver modes so expensive tile/forest/court layers are drawn once and reused.
 
 - `public/src/input.js`
   - Maps keyboard and touch controls to compact input packets.
@@ -71,7 +73,7 @@ Client to server:
 Server to client:
 
 ```json
-{ "type": "welcome", "playerId": "p_...", "version": "1.2.0" }
+{ "type": "welcome", "playerId": "p_...", "version": "1.3.0" }
 { "type": "roomState", "room": { "code": "ABCD", "mode": "ai", "aiDifficulty": "medium" } }
 { "type": "gameState", "state": { "phase": "playing", "games": [0, 0], "points": [1, 0], "tennisLabel": "15-Love" } }
 { "type": "notice", "text": "Joined room ABCD." }
@@ -148,6 +150,16 @@ The renderer is procedural. It draws:
 - Animated loading/main-screen details: title plaque, demo rally, slime spectators, crystal glow, menu cards, and rune bar
 
 Because the renderer is procedural, the repo stays tiny and has no image licensing baggage.
+
+## Laptop optimization model
+
+The current build is designed for classroom laptops by default. The Graphics dropdown maps to renderer/CSS profiles:
+
+- **Laptop Optimized**: default; cached static world layer, 45 FPS gameplay target, 30 FPS lobby target, fewer live particles, lighter full-page CSS motion.
+- **Battery Saver**: cached static world layer, 30 FPS gameplay target, fewer trails/sparks/particles, minimal CSS animation.
+- **Fancy 60 FPS**: original full-scene redraw path, 60 FPS target, all particles and decorative motion.
+
+The game logic still simulates on the server at 60 ticks per second. Graphics mode only changes how often and how heavily each browser paints the scene. That means a slower laptop can choose Battery Saver without changing scoring, physics, or fairness.
 
 ## Extending the game
 

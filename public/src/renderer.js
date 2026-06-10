@@ -60,35 +60,153 @@ const courtDust = Array.from({ length: 28 }, () => ({
   speed: 0.3 + rng() * 0.8
 }));
 
-export function createRenderer(canvas) {
-  const ctx = canvas.getContext("2d", { alpha: false });
+const QUALITY_PROFILES = Object.freeze({
+  laptop: {
+    key: "laptop",
+    label: "Laptop Optimized",
+    targetFps: 45,
+    lobbyFps: 30,
+    fullSceneEachFrame: false,
+    cloudCount: 4,
+    fireflyCount: 14,
+    courtDustCount: 12,
+    ambientBeamCount: 7,
+    lobbyCrystalCount: 12,
+    lobbySlimeCount: 6,
+    ballTrailLimit: 5,
+    sparkLimit: 42,
+    animateTorches: true,
+    animateNetVines: true
+  },
+  battery: {
+    key: "battery",
+    label: "Battery Saver",
+    targetFps: 30,
+    lobbyFps: 24,
+    fullSceneEachFrame: false,
+    cloudCount: 2,
+    fireflyCount: 8,
+    courtDustCount: 6,
+    ambientBeamCount: 4,
+    lobbyCrystalCount: 8,
+    lobbySlimeCount: 4,
+    ballTrailLimit: 3,
+    sparkLimit: 24,
+    animateTorches: true,
+    animateNetVines: false
+  },
+  fancy: {
+    key: "fancy",
+    label: "Fancy 60 FPS",
+    targetFps: 60,
+    lobbyFps: 60,
+    fullSceneEachFrame: true,
+    cloudCount: clouds.length,
+    fireflyCount: fireflies.length,
+    courtDustCount: courtDust.length,
+    ambientBeamCount: 15,
+    lobbyCrystalCount: lobbyCrystals.length,
+    lobbySlimeCount: lobbySlimes.length,
+    ballTrailLimit: 12,
+    sparkLimit: 90,
+    animateTorches: true,
+    animateNetVines: true
+  }
+});
+
+export function normalizeRenderQuality(value) {
+  const key = String(value || "laptop").toLowerCase();
+  return QUALITY_PROFILES[key] ? key : "laptop";
+}
+
+export function getRenderQualityProfiles() {
+  return QUALITY_PROFILES;
+}
+
+
+export function createRenderer(canvas, options = {}) {
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
   ctx.imageSmoothingEnabled = false;
   canvas.width = WORLD.width;
   canvas.height = WORLD.height;
 
+  let quality = normalizeRenderQuality(options.quality);
+  let profile = QUALITY_PROFILES[quality];
+  let staticLayer = buildStaticLayer();
+
   return {
+    setQuality(nextQuality) {
+      const normalized = normalizeRenderQuality(nextQuality);
+      if (normalized === quality) return;
+      quality = normalized;
+      profile = QUALITY_PROFILES[quality];
+      staticLayer = buildStaticLayer();
+    },
+    getQuality() {
+      return quality;
+    },
+    getTargetFps(hasActiveGame = false) {
+      return hasActiveGame ? profile.targetFps : profile.lobbyFps;
+    },
     draw({ game, room, clientId, connected }) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       const tick = game?.tick || performance.now() / 16.67;
-      drawBackdrop(ctx, tick);
-      drawCanopy(ctx, tick);
-      drawArena(ctx, tick);
-      drawCourtTrim(ctx, tick);
-      drawNet(ctx, tick);
-      drawAmbient(ctx, tick);
-
-      if (game) {
-        drawBall(ctx, game.ball, tick);
-        drawPlayers(ctx, game, clientId, tick);
-        drawSparks(ctx, game.sparks || []);
-        drawHud(ctx, game, room, clientId);
+      if (profile.fullSceneEachFrame) {
+        drawFullFrame(ctx, game, room, clientId, connected, tick, profile);
       } else {
-        drawEmptyLobby(ctx, room, connected, tick);
+        drawCachedFrame(ctx, staticLayer, game, room, clientId, connected, tick, profile);
       }
       ctx.restore();
     }
   };
+}
+
+function buildStaticLayer() {
+  const layer = document.createElement("canvas");
+  layer.width = WORLD.width;
+  layer.height = WORLD.height;
+  const layerCtx = layer.getContext("2d", { alpha: false });
+  layerCtx.imageSmoothingEnabled = false;
+  drawBackdrop(layerCtx, 0);
+  drawCanopy(layerCtx, 0);
+  drawArena(layerCtx, 0);
+  drawCourtTrim(layerCtx, 0);
+  drawNet(layerCtx, 0);
+  drawAmbient(layerCtx, 0, QUALITY_PROFILES.battery.ambientBeamCount);
+  return layer;
+}
+
+function drawFullFrame(ctx, game, room, clientId, connected, tick, profile) {
+  drawBackdrop(ctx, tick);
+  drawCanopy(ctx, tick);
+  drawArena(ctx, tick);
+  drawCourtTrim(ctx, tick);
+  drawNet(ctx, tick);
+  drawAmbient(ctx, tick, profile.ambientBeamCount);
+
+  if (game) {
+    drawBall(ctx, game.ball, tick, profile);
+    drawPlayers(ctx, game, clientId, tick);
+    drawSparks(ctx, game.sparks || [], profile);
+    drawHud(ctx, game, room, clientId);
+  } else {
+    drawEmptyLobby(ctx, room, connected, tick, profile);
+  }
+}
+
+function drawCachedFrame(ctx, staticLayer, game, room, clientId, connected, tick, profile) {
+  ctx.drawImage(staticLayer, 0, 0);
+  drawOptimizedAtmosphere(ctx, tick, profile);
+
+  if (game) {
+    drawBall(ctx, game.ball, tick, profile);
+    drawPlayers(ctx, game, clientId, tick);
+    drawSparks(ctx, game.sparks || [], profile);
+    drawHud(ctx, game, room, clientId);
+  } else {
+    drawEmptyLobby(ctx, room, connected, tick, profile);
+  }
 }
 
 function drawBackdrop(ctx, tick) {
@@ -383,15 +501,86 @@ function drawNet(ctx, tick) {
   }
 }
 
-function drawAmbient(ctx, tick) {
+function drawAmbient(ctx, tick, count = 15) {
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = "#b9f2ff";
-  for (let i = 0; i < 15; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const x = Math.round(wrap(i * 83 + tick * 0.22, -20, WORLD.width + 20));
     const y = 70 + ((i * 57) % 220);
     ctx.fillRect(x, y, 1, 20);
   }
   ctx.globalAlpha = 1;
+}
+
+function drawOptimizedAtmosphere(ctx, tick, profile) {
+  drawOptimizedClouds(ctx, tick, profile.cloudCount);
+  drawCourtDustOnly(ctx, tick, profile.courtDustCount);
+  drawFirefliesOnly(ctx, tick, profile.fireflyCount);
+  if (profile.animateTorches) {
+    drawTorch(ctx, WORLD.courtLeft - 28, WORLD.courtY - 54, tick + 1);
+    drawTorch(ctx, WORLD.courtRight + 18, WORLD.courtY - 54, tick + 5);
+  }
+  if (profile.animateNetVines) drawNetVinesOnly(ctx, tick);
+  drawAmbient(ctx, tick, profile.ambientBeamCount);
+}
+
+function drawOptimizedClouds(ctx, tick, count) {
+  if (count <= 0) return;
+  ctx.globalAlpha = 0.42;
+  for (let i = 0; i < Math.min(count, clouds.length); i += 1) {
+    const cloud = clouds[i];
+    const x = wrap(cloud.x + tick * cloud.speed * (cloud.layer + 1), -cloud.w, WORLD.width + cloud.w);
+    drawCloud(ctx, x, cloud.y, cloud.w, cloud.layer);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawCourtDustOnly(ctx, tick, count) {
+  if (count <= 0) return;
+  const courtX = WORLD.courtLeft;
+  const width = WORLD.courtRight - WORLD.courtLeft;
+  const dustCount = Math.min(count, courtDust.length);
+  for (let i = 0; i < dustCount; i += 1) {
+    const mote = courtDust[i];
+    const drift = wrap(mote.x + Math.sin(tick / 37 + mote.phase) * 18 + tick * mote.speed * 0.15, courtX + 8, WORLD.courtRight - 8);
+    const y = WORLD.courtY - 18 + Math.sin(tick / 19 + mote.phase) * 8;
+    ctx.globalAlpha = 0.14 + 0.14 * Math.abs(Math.sin(tick / 24 + mote.phase));
+    ctx.fillStyle = "#ffe6ac";
+    ctx.fillRect(Math.round(drift), Math.round(y), 2, 2);
+  }
+  ctx.globalAlpha = 1;
+
+  const shimmerX = courtX + 18 + wrap(tick * 1.4, 0, width - 36);
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(Math.round(shimmerX), WORLD.courtY - 23, 20, 2);
+}
+
+function drawFirefliesOnly(ctx, tick, count) {
+  if (count <= 0) return;
+  const bugCount = Math.min(count, fireflies.length);
+  ctx.fillStyle = "rgba(255,245,165,0.8)";
+  for (let i = 0; i < bugCount; i += 1) {
+    const bug = fireflies[i];
+    const x = Math.round(wrap(bug.x + Math.sin(tick / 55 + bug.phase) * 26, 0, WORLD.width));
+    const y = Math.round(bug.y + Math.cos(tick / 38 + bug.phase) * 12);
+    const alpha = 0.22 + 0.54 * Math.abs(Math.sin(tick / 19 + bug.phase));
+    ctx.globalAlpha = alpha;
+    ctx.fillRect(x, y, 2, 2);
+    ctx.globalAlpha = alpha * 0.22;
+    ctx.fillRect(x - 2, y - 2, 6, 6);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawNetVinesOnly(ctx, tick) {
+  const x = WORLD.centerX;
+  ctx.fillStyle = "#2c8b47";
+  for (let i = 0; i < 7; i += 1) {
+    const yy = WORLD.netTop + i * 13;
+    const sway = Math.round(Math.sin(tick / 14 + i) * 2);
+    ctx.fillRect(x - 67 + sway, yy, 5, 9);
+    ctx.fillRect(x + 62 + sway, yy + 4, 5, 9);
+  }
 }
 
 function drawPlayers(ctx, game, clientId, tick) {
@@ -497,10 +686,11 @@ function drawRacket(ctx, player, x, y, tick) {
   }
 }
 
-function drawBall(ctx, ball, tick) {
+function drawBall(ctx, ball, tick, profile = QUALITY_PROFILES.fancy) {
   if (!ball) return;
   const trail = ball.trail || [];
-  for (let i = trail.length - 1; i >= 0; i -= 1) {
+  const trailStart = Math.max(0, trail.length - profile.ballTrailLimit);
+  for (let i = trail.length - 1; i >= trailStart; i -= 1) {
     const p = trail[i];
     const alpha = (trail.length - i) / trail.length * 0.18;
     ctx.globalAlpha = alpha;
@@ -523,8 +713,10 @@ function drawBall(ctx, ball, tick) {
   ctx.fillRect(x + 3, y + 2, 2, 2);
 }
 
-function drawSparks(ctx, sparks) {
-  for (const spark of sparks) {
+function drawSparks(ctx, sparks, profile = QUALITY_PROFILES.fancy) {
+  const start = Math.max(0, sparks.length - profile.sparkLimit);
+  for (let i = start; i < sparks.length; i += 1) {
+    const spark = sparks[i];
     ctx.globalAlpha = Math.max(0, Math.min(1, spark.life / 24));
     ctx.fillStyle = spark.color || "#fff";
     ctx.fillRect(Math.round(spark.x), Math.round(spark.y), 3, 3);
@@ -604,9 +796,9 @@ function drawHud(ctx, game, room, clientId) {
   }
 }
 
-function drawEmptyLobby(ctx, room, connected, tick) {
-  drawLobbyCrystals(ctx, tick);
-  drawLobbySlimes(ctx, tick);
+function drawEmptyLobby(ctx, room, connected, tick, profile = QUALITY_PROFILES.fancy) {
+  drawLobbyCrystals(ctx, tick, profile.lobbyCrystalCount);
+  drawLobbySlimes(ctx, tick, profile.lobbySlimeCount);
   drawDemoRally(ctx, tick);
 
   const titleY = 104 + Math.round(Math.sin(tick / 38) * 3);
@@ -712,8 +904,9 @@ function drawMenuHintCards(ctx, tick, connected) {
   }
 }
 
-function drawLobbyCrystals(ctx, tick) {
-  for (const crystal of lobbyCrystals) {
+function drawLobbyCrystals(ctx, tick, count = lobbyCrystals.length) {
+  for (let i = 0; i < Math.min(count, lobbyCrystals.length); i += 1) {
+    const crystal = lobbyCrystals[i];
     const x = Math.round(crystal.x + Math.sin(tick / 40 + crystal.phase) * 4);
     const y = Math.round(crystal.y);
     const h = Math.round(crystal.h + Math.sin(tick / 25 + crystal.phase) * 3);
@@ -733,8 +926,9 @@ function drawLobbyCrystals(ctx, tick) {
   ctx.globalAlpha = 1;
 }
 
-function drawLobbySlimes(ctx, tick) {
-  for (const slime of lobbySlimes) {
+function drawLobbySlimes(ctx, tick, count = lobbySlimes.length) {
+  for (let i = 0; i < Math.min(count, lobbySlimes.length); i += 1) {
+    const slime = lobbySlimes[i];
     const hop = Math.max(0, Math.sin(tick / 18 + slime.phase)) * 9;
     const squash = hop > 1 ? 0 : Math.round(Math.abs(Math.sin(tick / 9 + slime.phase)) * 2);
     drawSlime(ctx, Math.round(slime.x), Math.round(slime.y - hop), slime.color, squash, tick + slime.phase * 10);

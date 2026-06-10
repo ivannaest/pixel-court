@@ -59,3 +59,5 @@ This game is intended for trusted local networks. Do not expose the server direc
 - Keep all players geographically nearby on the same LAN.
 - Close heavy downloads or video streams if ball movement feels delayed.
 - Host on the fastest computer available.
+- For classroom laptops, leave **Graphics** set to **Laptop Optimized**.
+- If one player's laptop is still laggy, that player can switch only their browser to **Battery Saver** without affecting the match rules or other players.

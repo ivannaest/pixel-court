@@ -35,7 +35,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -96,7 +97,8 @@ button.danger {
     0 4px 0 #100608;
 }
 
-input {
+input,
+select {
   width: 100%;
   border: 0;
   color: #ffffff;
@@ -108,7 +110,23 @@ input {
   outline: none;
 }
 
-input:focus {
+select {
+  appearance: none;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #86e9ff 50%),
+    linear-gradient(135deg, #86e9ff 50%, transparent 50%),
+    linear-gradient(180deg, #0b111c, #0b111c);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%,
+    0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+input:focus,
+select:focus {
   box-shadow:
     inset 0 0 0 2px #05070c,
     inset 0 0 0 4px #89e8ff,
@@ -265,6 +283,18 @@ canvas {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 0.8rem;
+}
+
+.field small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.graphics-field {
+  margin-bottom: 0.85rem;
 }
 
 .button-grid {
@@ -695,11 +725,13 @@ button::after {
   animation-delay: 1.5s;
 }
 
-input {
+input,
+select {
   transition: box-shadow 120ms ease, background-color 120ms ease;
 }
 
-input:focus {
+input:focus,
+select:focus {
   animation: inputCrystal 1.2s steps(4, end) infinite;
 }
 
@@ -832,6 +864,90 @@ body.loaded .loading-overlay {
 
 .loader-floor i:nth-child(even) {
   animation-delay: 180ms;
+}
+
+
+/* Laptop-first performance tuning. The default keeps the pixel-art look, but avoids costly full-page filters and huge animated shadows. */
+body[data-graphics="laptop"],
+body[data-graphics="battery"] {
+  animation: none;
+}
+
+body[data-graphics="laptop"]::before {
+  animation: none;
+  opacity: 0.56;
+}
+
+body[data-graphics="laptop"]::after {
+  animation-duration: 16s;
+  opacity: 0.22;
+}
+
+body[data-graphics="battery"]::before,
+body[data-graphics="battery"]::after {
+  animation: none;
+  opacity: 0.18;
+}
+
+body[data-graphics="laptop"] .stage,
+body[data-graphics="battery"] .stage {
+  animation: none;
+  box-shadow:
+    0 0 0 4px #b59b66,
+    0 14px 34px rgba(0, 0, 0, 0.42);
+}
+
+body[data-graphics="laptop"] .stage::before {
+  opacity: 0.3;
+}
+
+body[data-graphics="battery"] .stage::before {
+  opacity: 0.18;
+}
+
+body[data-graphics="laptop"] .stage::after,
+body[data-graphics="battery"] .stage::after {
+  box-shadow: inset 0 0 48px rgba(0,0,0,0.44);
+}
+
+body[data-graphics="laptop"] .panel,
+body[data-graphics="battery"] .panel {
+  animation: none;
+}
+
+body[data-graphics="laptop"] .panel::before {
+  animation: none;
+  opacity: 0.72;
+}
+
+body[data-graphics="battery"] .panel::before {
+  animation: none;
+  opacity: 0.42;
+}
+
+body[data-graphics="laptop"] button::after {
+  animation-duration: 6.5s;
+  opacity: 0.42;
+}
+
+body[data-graphics="battery"] button::after,
+body[data-graphics="battery"] .brand h1::after,
+body[data-graphics="battery"] .version,
+body[data-graphics="battery"] .status-dot,
+body[data-graphics="battery"] .ai-box,
+body[data-graphics="battery"] input:focus,
+body[data-graphics="battery"] select:focus {
+  animation: none;
+}
+
+body[data-graphics="battery"] .loader-card {
+  animation: loaderPop 420ms steps(5, end) both;
+}
+
+body[data-graphics="battery"] .loader-logo span,
+body[data-graphics="battery"] .loader-bar span,
+body[data-graphics="battery"] .loader-floor i {
+  animation-duration: 1.8s;
 }
 
 @keyframes skyBreath {

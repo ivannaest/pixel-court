@@ -41,6 +41,16 @@
         <span id="statusText">Connecting...</span>
       </div>
 
+      <label class="field graphics-field">
+        <span>Graphics</span>
+        <select id="graphicsQuality" aria-label="Graphics quality">
+          <option value="laptop">Laptop Optimized</option>
+          <option value="battery">Battery Saver</option>
+          <option value="fancy">Fancy 60 FPS</option>
+        </select>
+        <small>Default is laptop-friendly: cached pixel layers, lower lobby FPS, same art direction.</small>
+      </label>
+
       <label class="field">
         <span>Player name</span>
         <input id="playerName" maxlength="18" autocomplete="nickname" spellcheck="false">
