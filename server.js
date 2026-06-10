@@ -45,6 +45,7 @@ server.listen(PORT, "0.0.0.0", () => {
 setInterval(() => {
   for (const room of rooms.values()) {
     if (!room.game) continue;
+    if (room.paused || room.game.paused) continue;
     const inputs = {};
     for (const player of room.players.values()) {
       if (!player.seat || player.spectator) continue;
@@ -291,6 +292,9 @@ function handleClientMessage(client, text) {
     case "startMatch":
       startMatch(client);
       break;
+    case "togglePause":
+      togglePause(client);
+      break;
     case "input":
       client.input = sanitizeInput(message.input);
       break;
@@ -324,6 +328,7 @@ function createRoom(client, modeKey = "singles", name) {
     aiDifficulty: null,
     players: new Map(),
     game: null,
+    paused: false,
     createdAt: Date.now()
   };
   rooms.set(code, room);
@@ -344,6 +349,7 @@ function createAiRoom(client, difficulty = "medium", name) {
     aiDifficulty,
     players: new Map(),
     game: null,
+    paused: false,
     createdAt: Date.now()
   };
   rooms.set(code, room);
@@ -415,6 +421,7 @@ function leaveRoom(client, notify = true) {
 
   if (room.game) {
     room.game = null;
+    room.paused = false;
     for (const player of room.players.values()) player.ready = false;
     broadcastNotice(room, "Match paused because a player left. Ready up to restart.");
   }
@@ -468,7 +475,30 @@ function startMatch(client) {
     return;
   }
 
+  room.paused = false;
   room.game = createGameState(roomSnapshot(room));
+  room.game.paused = false;
+  broadcastRoom(room);
+  broadcastGame(room);
+}
+
+
+function togglePause(client) {
+  const room = getClientRoom(client);
+  if (!room || !room.game) {
+    sendError(client, "Start an AI match before pausing.");
+    return;
+  }
+  if (room.mode !== "ai") {
+    sendError(client, "Pause is only enabled for Vs Computer matches.");
+    return;
+  }
+  if (room.game.phase === "matchOver") return;
+
+  if (!room.paused) room.resumeMessage = room.game.message;
+  room.paused = !room.paused;
+  room.game.paused = room.paused;
+  room.game.message = room.paused ? "Paused — press Esc to resume" : (room.resumeMessage || "Rally!");
   broadcastRoom(room);
   broadcastGame(room);
 }
@@ -526,7 +556,8 @@ function roomSnapshot(room) {
     seatedCount,
     readyCount,
     canStart: seatedCount === mode.maxPlayers && readyCount === mode.maxPlayers,
-    phase: room.game ? room.game.phase : "lobby",
+    paused: !!room.paused,
+    phase: room.game ? (room.paused ? "paused" : room.game.phase) : "lobby",
     createdAt: room.createdAt
   };
 }
@@ -539,8 +570,74 @@ function broadcastRoom(room) {
   }
 }
 
+
+function compactGameState(game) {
+  if (!game) return null;
+
+  const players = {};
+  for (const [id, player] of Object.entries(game.players || {})) {
+    players[id] = {
+      id: player.id,
+      name: player.name,
+      team: player.team,
+      slot: player.slot,
+      bot: !!player.bot,
+      x: Math.round(player.x * 10) / 10,
+      y: Math.round(player.y * 10) / 10,
+      vx: Math.round(player.vx * 10) / 10,
+      vy: Math.round(player.vy * 10) / 10,
+      facing: player.facing,
+      onGround: !!player.onGround,
+      swing: player.swing,
+      hueSeed: player.hueSeed
+    };
+  }
+
+  const ball = game.ball ? {
+    x: Math.round(game.ball.x * 10) / 10,
+    y: Math.round(game.ball.y * 10) / 10,
+    vx: Math.round(game.ball.vx * 10) / 10,
+    vy: Math.round(game.ball.vy * 10) / 10,
+    radius: game.ball.radius,
+    trail: (game.ball.trail || []).slice(0, 5).map((point) => ({
+      x: Math.round(point.x * 10) / 10,
+      y: Math.round(point.y * 10) / 10
+    }))
+  } : null;
+
+  return {
+    version: game.version,
+    mode: game.mode,
+    phase: game.phase,
+    paused: !!game.paused,
+    tick: game.tick,
+    countdown: game.countdown,
+    message: game.message,
+    score: game.score,
+    games: game.games,
+    points: game.points,
+    pointLabels: game.pointLabels,
+    tennisLabel: game.tennisLabel,
+    gameScoreLabel: game.gameScoreLabel,
+    matchTargetGames: game.matchTargetGames,
+    rally: game.rally,
+    longestRally: game.longestRally,
+    winner: game.winner,
+    players,
+    ball,
+    sparks: (game.sparks || []).slice(-16).map((spark) => ({
+      x: Math.round(spark.x),
+      y: Math.round(spark.y),
+      vx: Math.round(spark.vx * 10) / 10,
+      vy: Math.round(spark.vy * 10) / 10,
+      color: spark.color,
+      life: spark.life
+    }))
+  };
+}
+
 function broadcastGame(room) {
-  const payload = { type: "gameState", state: room.game };
+  const payload = { type: "gameState", state: compactGameState(room.game) };
   for (const player of room.players.values()) {
     if (player.bot) continue;
     clients.get(player.id)?.connection.send(payload);

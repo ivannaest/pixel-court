@@ -59,6 +59,7 @@ export function createGameState(roomSnapshot) {
     version: 1,
     mode: mode.key,
     phase: "countdown",
+    paused: false,
     tick: 0,
     countdown: MATCH.countdownTicks,
     pointPause: 0,
@@ -150,6 +151,7 @@ function resetForServe(state, servingTeam, message = "Serve") {
 
 export function simulateTick(state, inputsByPlayer = {}) {
   if (!state || state.phase === "matchOver") return state;
+  if (state.paused) return state;
 
   state.tick += 1;
   state.sparks = state.sparks
@@ -296,6 +298,8 @@ function stepBall(state, inputsByPlayer) {
   ball.hitCooldown = Math.max(0, ball.hitCooldown - 1);
   ball.trail = rememberTrail(ball.trail, ball.x, ball.y);
 
+  ball.prevX = ball.x;
+  ball.prevY = ball.y;
   ball.vy += BALL.gravity;
   ball.vx *= BALL.airDrag;
   ball.x += ball.vx;
@@ -310,7 +314,7 @@ function stepBall(state, inputsByPlayer) {
 
 function rememberTrail(trail, x, y) {
   const next = [{ x, y }, ...(trail || [])];
-  return next.slice(0, 9);
+  return next.slice(0, 5);
 }
 
 function checkRacketHits(state, inputsByPlayer) {
@@ -334,8 +338,8 @@ function checkRacketHits(state, inputsByPlayer) {
 
     if (distSq <= radius * radius) {
       const dir = signForTeam(player.team);
-      const upward = input.down ? -4.3 : input.jump ? -9.6 : -7.1;
-      const speed = 8.4 + Math.min(3.1, Math.abs(player.vx) * 0.5) + Math.min(1.6, state.rally * 0.05);
+      const upward = input.down ? -5.1 : input.jump ? -9.7 : -7.3;
+      const speed = (input.down ? 7.7 : 8.6) + Math.min(2.8, Math.abs(player.vx) * 0.46) + Math.min(1.2, state.rally * 0.04);
       const slotSlice = state.mode === "doubles" && player.slot === 1 ? 0.8 : 0;
       ball.x = racketX + dir * (BALL.radius + 2);
       ball.y = racketY - 2;
@@ -351,7 +355,7 @@ function checkRacketHits(state, inputsByPlayer) {
       state.longestRally = Math.max(state.longestRally, state.rally);
       player.rallyHits += 1;
       player.sweat = 18;
-      burst(state, ball.x, ball.y, TEAM_META[player.team].glow, 9 + Math.min(8, state.rally));
+      burst(state, ball.x, ball.y, TEAM_META[player.team].glow, 5 + Math.min(5, state.rally));
       pushEvent(state, `${player.name} returns the comet ${state.rally}`);
       return;
     }
@@ -364,7 +368,17 @@ function checkNet(state) {
   const netRight = WORLD.centerX + WORLD.netWidth / 2;
   const inNetX = ball.x + BALL.radius > netLeft && ball.x - BALL.radius < netRight;
   const inNetY = ball.y + BALL.radius > WORLD.netTop && ball.y - BALL.radius < WORLD.courtY;
-  if (!inNetX || !inNetY) return;
+
+  const hadPrev = Number.isFinite(ball.prevX) && Number.isFinite(ball.prevY);
+  const crossedNet = hadPrev && (ball.prevX - WORLD.centerX) * (ball.x - WORLD.centerX) <= 0;
+  let sweptIntoNet = false;
+  if (crossedNet && Math.abs(ball.x - ball.prevX) > 0.001) {
+    const t = clamp((WORLD.centerX - ball.prevX) / (ball.x - ball.prevX), 0, 1);
+    const yAtNet = ball.prevY + (ball.y - ball.prevY) * t;
+    sweptIntoNet = yAtNet + BALL.radius > WORLD.netTop && yAtNet - BALL.radius < WORLD.courtY;
+  }
+
+  if (!((inNetX && inNetY) || sweptIntoNet)) return;
 
   const pointTeam = ball.lastTouchTeam == null ? oppositeTeam(sideForX(ball.x)) : oppositeTeam(ball.lastTouchTeam);
   awardPoint(state, pointTeam, "The ball clipped the vine net");
@@ -435,8 +449,28 @@ function awardPoint(state, team, reason) {
     state.message = `${TEAM_META[team].short} point — ${state.tennisLabel} — ${reason}`;
   }
 
+  settleBallAfterPoint(state, team, reason);
   pushEvent(state, state.message);
-  burst(state, state.ball.x, state.ball.y, TEAM_META[team].glow, result.gameWon ? 32 : 24);
+  burst(state, state.ball.x, state.ball.y, TEAM_META[team].glow, result.gameWon ? 12 : 8);
+}
+
+function settleBallAfterPoint(state, awardedTeam, reason) {
+  const ball = state.ball;
+  const sideDir = awardedTeam === TEAM.LEFT ? -1 : 1;
+  const wasNet = /net/i.test(reason);
+  ball.x = wasNet
+    ? WORLD.centerX + sideDir * 84
+    : clamp(ball.x, WORLD.courtLeft + 32, WORLD.courtRight - 32);
+  ball.y = wasNet
+    ? WORLD.netTop - 30
+    : clamp(ball.y, WORLD.courtY - 84, WORLD.courtY - BALL.radius);
+  ball.vx = 0;
+  ball.vy = 0;
+  ball.spin = 0;
+  ball.hitCooldown = BALL.hitCooldown;
+  ball.prevX = ball.x;
+  ball.prevY = ball.y;
+  ball.trail = rememberTrail([], ball.x, ball.y);
 }
 
 function recordTennisPoint(state, team) {
@@ -482,8 +516,9 @@ function pointName(points) {
 }
 
 function burst(state, x, y, color, count) {
-  for (let i = 0; i < count; i += 1) {
-    const angle = (i / count) * Math.PI * 2 + (state.tick % 11) * 0.11;
+  const limitedCount = Math.max(0, Math.min(count, 14));
+  for (let i = 0; i < limitedCount; i += 1) {
+    const angle = (i / Math.max(1, limitedCount)) * Math.PI * 2 + (state.tick % 11) * 0.11;
     const speed = 0.7 + ((i * 37) % 11) / 8;
     state.sparks.push({
       x,
@@ -494,7 +529,7 @@ function burst(state, x, y, color, count) {
       life: 16 + ((i * 13) % 18)
     });
   }
-  state.sparks = state.sparks.slice(-90);
+  state.sparks = state.sparks.slice(-36);
 }
 
 function pushEvent(state, text) {

@@ -76,7 +76,7 @@ function predictLandingX(ball, reactionTicks) {
   let y = ball.y;
   let vx = ball.vx;
   let vy = ball.vy;
-  const maxTicks = 110 + reactionTicks;
+  const maxTicks = 76 + reactionTicks;
 
   for (let i = 0; i < maxTicks; i += 1) {
     vy += BALL.gravity;

@@ -32,10 +32,18 @@ export function createInputController(onChange) {
   }
 
   function handleKey(event, value) {
+    if (shouldIgnoreKeyboard(event)) return;
     const action = keyToAction.get(event.code);
     if (!action) return;
     event.preventDefault();
     setAction(action, value);
+  }
+
+  function shouldIgnoreKeyboard(event) {
+    const target = event.target;
+    if (!target || target === window || target === document.body) return false;
+    const tag = String(target.tagName || "").toLowerCase();
+    return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
   }
 
   window.addEventListener("keydown", (event) => handleKey(event, true), { passive: false });
@@ -70,7 +78,9 @@ export function createInputController(onChange) {
     button.addEventListener("pointerleave", onRelease);
   });
 
-  const pulse = window.setInterval(() => emit(true), 70);
+  const pulse = window.setInterval(() => {
+    if (Object.values(state).some(Boolean)) emit(true);
+  }, 140);
 
   return {
     getState: () => ({ ...state }),
