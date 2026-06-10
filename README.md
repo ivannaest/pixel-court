@@ -3,6 +3,7 @@
 ## Disclaimer
 
 This game was created with the assistance of AI as part of a learning workshop focused on exploring AI-assisted development.
+____________________________________________________________________________________________________________________________
 
 **Pixel Court** is a 2D browser tennis game for class-friendly local play. It supports LAN **Singles**, LAN **Doubles**, and one-player **Vs Computer** mode with Easy, Medium, and Hard AI.
 
