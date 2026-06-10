@@ -4,21 +4,18 @@
 
 The visual direction is original fantasy sandbox pixel art: a side-view clay court built from chunky terrain tiles, grass caps, vines, torches, crystal glow, banners, glowing rackets, pixel HUD panels, and a forest-court atmosphere. The project does **not** include commercial game assets, copied tiles, sprites, fonts, or sounds.
 
-## What is new in v1.5.0
+## What is new in v1.6.0
 
-This version is a rescue/performance pass for classroom laptops. The goal is simple: the game should run smoothly on normal school laptops first, then look fancier only when a player chooses the fancy mode.
+This version keeps the v1.5 lag fix, then fixes the blurry graphics caused by overly aggressive downscaling. The goal is **sharp menus and HUD text without bringing lag back**.
 
-- Default graphics mode is now **Performance Lock**.
-- Performance Lock keeps the pixel-art style but uses a lower internal Canvas resolution, cached scenery, almost no live-match particles, and 60 FPS gameplay drawing for smoother ball motion.
-- Added a stricter **Low Power** mode for older laptops.
-- Changed server game-state broadcasts from low-frequency updates to every physics tick, which removes the old visible ball stutter.
-- Added light client-side visual smoothing so ball/player motion does not snap between network packets.
-- Lowered the net to a playable height. The old net was visually tall enough that normal returns clipped it too often.
-- Rebuilt racket-hit physics with clearer arcs: neutral shots clear the net, `W`/Up lobs, and `S`/Down slices lower/faster.
-- Fixed dead-ball behavior after net/out points so the ball no longer freezes mid-air or appears stuck in the net.
-- Kept **Esc pause/resume** for Vs Computer matches.
-- Stopped decorative browser/CSS animation during active matches in Performance Lock and Low Power.
-- Reduced spark, trail, and state payload sizes.
+- Default graphics mode is now **Sharp Performance**.
+- Sharp Performance renders the Canvas at the native 960×540 game resolution instead of the blurry reduced backing resolution.
+- Static scenery is still cached, so the forest, terrain, court, banners, and net are not redrawn from scratch every frame.
+- The main title, HUD title, pause menu, and match-complete screen now use a blocky Canvas pixel font drawn with rectangles instead of blurry scaled browser text.
+- The stage is capped at a clean 960 px width on larger screens to avoid soft fractional stretching.
+- Removed the GPU canvas transform that could soften the rendered Canvas in some browsers.
+- Low Power mode remains available, but now uses a less blurry 0.8 render scale and 45 FPS gameplay target.
+- Gameplay still uses the v1.5 smooth ball movement, net fix, dead-ball fix, and **Esc pause/resume** for Vs Computer matches.
 
 ## Features
 
@@ -55,7 +52,7 @@ npm start
 The server prints URLs like this:
 
 ```text
-Pixel Court v1.5.0
+Pixel Court v1.6.0
 Local:   http://localhost:7777
 LAN:     http://192.168.1.24:7777
 ```
@@ -78,7 +75,7 @@ PORT=8080 npm start
 
 1. Run `npm start`.
 2. Open `http://localhost:7777`.
-3. Confirm **Graphics** is set to **Performance Lock**.
+3. Confirm **Graphics** is set to **Sharp Performance**.
 4. Click **AI Easy**.
 5. Click **Ready**.
 6. Click **Start Match**.
@@ -109,25 +106,25 @@ Touch devices get on-screen controls automatically.
 
 ## Graphics and laptop performance
 
-Pixel Court now defaults to **Performance Lock**. This is the class-safe mode.
+Pixel Court now defaults to **Sharp Performance**. This is the class-safe mode.
 
 | Mode | Best for | What it does |
 | --- | --- | --- |
-| Performance Lock | Most classroom laptops | Low internal Canvas resolution, cached world layer, 60 FPS active gameplay drawing, no live-match CSS animation, tiny particles/trails. |
-| Low Power | Older laptops or low battery | Even lower Canvas load, 30 FPS gameplay drawing, nearly no decorative live effects. |
+| Sharp Performance | Most classroom laptops | Native 960×540 Canvas, cached world layer, crisp pixel UI text, 60 FPS active gameplay drawing, no live-match CSS animation, tiny particles/trails. |
+| Low Power | Older laptops or low battery | 0.8 render scale, 45 FPS gameplay drawing, nearly no decorative live effects. |
 | Fancy 60 FPS | Strong computers | Full per-frame scene animation and higher decorative effect counts. |
 
-For class, keep everyone on **Performance Lock** first. If one laptop still struggles, switch only that laptop to **Low Power**. Graphics mode is saved per browser.
+For class, keep everyone on **Sharp Performance** first. If one laptop still struggles, switch only that laptop to **Low Power**. Graphics mode is saved per browser.
 
 ## If the game still looks laggy
 
 First confirm the version printed in the terminal says:
 
 ```text
-Pixel Court v1.5.0
+Pixel Court v1.6.0
 ```
 
-Then confirm the browser menu says **Performance Lock**. If it still shows **Classroom Smooth**, **Battery Saver**, or `v1.4.0`, the old files are still running.
+Then confirm the browser menu says **Sharp Performance**. If it still shows **Performance Lock**, **Classroom Smooth**, **Battery Saver**, or an older version, the old files are still running.
 
 ## Match rules
 
@@ -148,6 +145,7 @@ This is arcade tennis rather than a strict simulation:
 pixel-court/
 ├── server.js                    # Static file server + WebSocket rooms + game loop + AI pause
 ├── package.json                 # npm scripts and metadata
+├── package-lock.json            # npm lockfile for reproducible installs
 ├── public/
 │   ├── index.html               # Browser UI shell + loading overlay
 │   ├── styles.css               # Pixel-panel UI styling and performance CSS profiles
@@ -180,7 +178,7 @@ Before class, also run:
 npm start
 ```
 
-Then open `http://localhost:7777`, start an AI Easy match, confirm **Performance Lock** is selected, press **Esc** to pause/resume, and make sure the game feels smooth.
+Then open `http://localhost:7777`, start an AI Easy match, confirm **Sharp Performance** is selected, press **Esc** to pause/resume, and make sure the game feels smooth.
 
 ## Updating GitHub
 
@@ -191,7 +189,7 @@ For an existing GitHub repository, copy the new project files into your local re
 ```bash
 git status
 git add .
-git commit -m "Fix Pixel Court performance and ball physics"
+git commit -m "Sharpen Pixel Court graphics"
 git pull --rebase origin main
 git push
 ```

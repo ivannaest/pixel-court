@@ -11,7 +11,7 @@ npm start
 The terminal prints something like:
 
 ```text
-Pixel Court v1.5.0
+Pixel Court v1.6.0
 Local:   http://localhost:7777
 LAN:     http://192.168.1.24:7777
 ```
@@ -23,7 +23,7 @@ Use `localhost` only on the host computer. Other players must use the LAN addres
 Computer mode still runs through the local server, but it only needs one browser:
 
 1. Open the local URL.
-2. Confirm **Graphics** is set to **Performance Lock**.
+2. Confirm **Graphics** is set to **Sharp Performance**.
 3. Click **AI Easy**, **AI Medium**, or **AI Hard**.
 4. Click **Ready**.
 5. Click **Start Match**.
@@ -40,7 +40,7 @@ No other LAN device is required for this mode.
 
 ## Classroom performance settings
 
-- Keep **Graphics** on **Performance Lock** for regular laptops.
+- Keep **Graphics** on **Sharp Performance** for regular laptops; it is the crisp default that should still run smoothly.
 - Use **Low Power** on older laptops or laptops in low-power mode.
 - Avoid **Fancy 60 FPS** unless the laptop is clearly strong enough.
 - Close extra tabs, video calls, screen recorders, and large downloads.

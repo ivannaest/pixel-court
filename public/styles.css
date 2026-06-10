@@ -19,6 +19,11 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-font-smoothing: none;
+  text-rendering: geometricPrecision;
+}
+
 html,
 body {
   margin: 0;
@@ -157,7 +162,9 @@ kbd {
 
 .stage {
   position: relative;
+  justify-self: center;
   overflow: hidden;
+  width: min(100%, 960px);
   border: 8px solid var(--line);
   outline: 4px solid #15100e;
   background: #05070d;
@@ -189,10 +196,13 @@ kbd {
 canvas {
   display: block;
   width: 100%;
+  max-width: 960px;
   height: auto;
   aspect-ratio: 16 / 9;
+  background: #05070d;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  transform: none;
 }
 
 .panel {
@@ -766,6 +776,7 @@ select:focus {
   display: grid;
   place-items: center;
   padding: 1rem;
+  line-height: 1.2;
   background:
     radial-gradient(circle at 50% 40%, rgba(134, 233, 255, 0.18), transparent 13rem),
     radial-gradient(circle at 36% 60%, rgba(88, 214, 107, 0.16), transparent 10rem),
@@ -824,6 +835,7 @@ body.loaded .loading-overlay {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-shadow: 4px 4px 0 #05070c, 0 0 16px rgba(255,244,194,0.22);
+  line-height: 1;
 }
 
 .loader-card p {
@@ -867,7 +879,7 @@ body.loaded .loading-overlay {
 }
 
 
-/* Classroom-first performance tuning. The default keeps the pixel-art look, but avoids costly full-page filters and huge animated shadows. */
+/* Classroom-first performance tuning. The default keeps crisp pixel art, but avoids costly full-page filters and huge animated shadows. */
 body[data-graphics="laptop"],
 body[data-graphics="battery"] {
   animation: none;
@@ -1060,7 +1072,7 @@ body[data-graphics="battery"] .loader-floor i {
   }
 }
 
-/* v1.5 performance lock: keep the pixel look, stop expensive browser effects during play. */
+/* v1.6 sharp performance lock: keep the pixel look, stop expensive browser effects during play. */
 .stage,
 .panel,
 .loading-overlay,
@@ -1070,7 +1082,6 @@ body[data-graphics="battery"] .loader-floor i {
 
 canvas {
   contain: strict;
-  transform: translateZ(0);
 }
 
 body[data-graphics="laptop"] .stage::before,
@@ -1123,10 +1134,10 @@ body.in-match .howto {
 }
 
 body.is-paused canvas {
-  opacity: 0.92;
+  opacity: 1;
 }
 
-/* v1.5 rescue performance pass: make the default class mode extremely predictable. */
+/* v1.6 crisp performance pass: make the default class mode extremely predictable. */
 body[data-graphics="laptop"],
 body[data-graphics="battery"] {
   background: linear-gradient(180deg, #07101f, #11131d 58%, #0c0f15);

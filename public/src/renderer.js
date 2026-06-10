@@ -63,11 +63,11 @@ const courtDust = Array.from({ length: 28 }, () => ({
 const QUALITY_PROFILES = Object.freeze({
   laptop: {
     key: "laptop",
-    label: "Performance Lock",
+    label: "Sharp Performance",
     targetFps: 60,
-    lobbyFps: 20,
-    pausedFps: 6,
-    resolutionScale: 0.56,
+    lobbyFps: 24,
+    pausedFps: 8,
+    resolutionScale: 1,
     fullSceneEachFrame: false,
     liveAtmosphereDuringMatch: false,
     cloudCount: 0,
@@ -80,15 +80,15 @@ const QUALITY_PROFILES = Object.freeze({
     sparkLimit: 4,
     animateTorches: false,
     animateNetVines: false,
-    smoothing: 0.9
+    smoothing: 0.86
   },
   battery: {
     key: "battery",
     label: "Low Power",
-    targetFps: 30,
+    targetFps: 45,
     lobbyFps: 12,
-    pausedFps: 4,
-    resolutionScale: 0.46,
+    pausedFps: 5,
+    resolutionScale: 0.8,
     fullSceneEachFrame: false,
     liveAtmosphereDuringMatch: false,
     cloudCount: 0,
@@ -101,7 +101,7 @@ const QUALITY_PROFILES = Object.freeze({
     sparkLimit: 0,
     animateTorches: false,
     animateNetVines: false,
-    smoothing: 1
+    smoothing: 0.92
   },
   fancy: {
     key: "fancy",
@@ -124,6 +124,52 @@ const QUALITY_PROFILES = Object.freeze({
     animateNetVines: true,
     smoothing: 0.82
   }
+});
+
+
+const PIXEL_FONT = Object.freeze({
+  "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+  "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+  "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+  "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+  "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+  "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
+  "G": ["01111", "10000", "10000", "10111", "10001", "10001", "01111"],
+  "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+  "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+  "J": ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
+  "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+  "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+  "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
+  "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+  "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+  "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+  "Q": ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
+  "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+  "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+  "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+  "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+  "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+  "W": ["10001", "10001", "10001", "10101", "10101", "10101", "01010"],
+  "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+  "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
+  "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+  "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+  "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+  "2": ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
+  "3": ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
+  "4": ["10010", "10010", "10010", "11111", "00010", "00010", "00010"],
+  "5": ["11111", "10000", "10000", "11110", "00001", "00001", "11110"],
+  "6": ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
+  "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
+  "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
+  "9": ["01110", "10001", "10001", "01111", "00001", "00001", "01110"],
+  " ": ["000", "000", "000", "000", "000", "000", "000"],
+  "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+  ":": ["000", "010", "000", "000", "010", "000", "000"],
+  ".": ["000", "000", "000", "000", "000", "010", "010"],
+  "!": ["010", "010", "010", "010", "010", "000", "010"],
+  "/": ["00001", "00010", "00010", "00100", "01000", "01000", "10000"]
 });
 
 export function normalizeRenderQuality(value) {
@@ -250,6 +296,7 @@ function configureCanvas(ctx, canvas, profile) {
   canvas.width = Math.max(1, Math.round(WORLD.width * scale));
   canvas.height = Math.max(1, Math.round(WORLD.height * scale));
   canvas.style.aspectRatio = `${WORLD.width} / ${WORLD.height}`;
+  canvas.style.imageRendering = "pixelated";
   prepareContext(ctx, profile);
 }
 
@@ -832,8 +879,10 @@ function drawHud(ctx, game, room, clientId) {
   ctx.fillText(String(games[TEAM.LEFT] ?? 0), WORLD.centerX - 126, 38);
   ctx.fillStyle = TEAM_META[TEAM.RIGHT].main;
   ctx.fillText(String(games[TEAM.RIGHT] ?? 0), WORLD.centerX + 126, 38);
-  ctx.fillStyle = "#f1e6c8";
-  ctx.fillText("PIXEL COURT", WORLD.centerX, 30);
+  drawPixelText(ctx, "PIXEL COURT", WORLD.centerX, 20, 2, "#f1e6c8", {
+    align: "center",
+    shadow: [[2, 2, "#05070c"]]
+  });
 
   ctx.font = "9px monospace";
   ctx.fillStyle = TEAM_META[TEAM.LEFT].glow;
@@ -880,9 +929,10 @@ function drawHud(ctx, game, room, clientId) {
   if (game.paused) {
     pixelPanel(ctx, WORLD.centerX - 178, 152, 356, 104, "rgba(7, 10, 16, 0.94)", "#86e9ff");
     ctx.textAlign = "center";
-    ctx.font = "18px monospace";
-    ctx.fillStyle = "#fff4c2";
-    ctx.fillText("PAUSED", WORLD.centerX, 188);
+    drawPixelText(ctx, "PAUSED", WORLD.centerX, 172, 4, "#fff4c2", {
+      align: "center",
+      shadow: [[3, 3, "#05070c"]]
+    });
     ctx.font = "10px monospace";
     ctx.fillStyle = "#c9e8e0";
     ctx.fillText("Press Esc to resume the AI match.", WORLD.centerX, 214);
@@ -892,9 +942,10 @@ function drawHud(ctx, game, room, clientId) {
   if (game.phase === "matchOver") {
     pixelPanel(ctx, WORLD.centerX - 205, 156, 410, 122, "rgba(13, 11, 18, 0.92)", TEAM_META[game.winner ?? TEAM.LEFT].main);
     ctx.textAlign = "center";
-    ctx.font = "16px monospace";
-    ctx.fillStyle = TEAM_META[game.winner ?? TEAM.LEFT].glow;
-    ctx.fillText("MATCH COMPLETE", WORLD.centerX, 190);
+    drawPixelText(ctx, "MATCH COMPLETE", WORLD.centerX, 176, 3, TEAM_META[game.winner ?? TEAM.LEFT].glow, {
+      align: "center",
+      shadow: [[2, 2, "#05070c"]]
+    });
     ctx.font = "12px monospace";
     ctx.fillStyle = "#fff9d8";
     ctx.fillText(game.message, WORLD.centerX, 216);
@@ -950,17 +1001,14 @@ function drawLogoPlaque(ctx, centerX, y, tick) {
   pixelPanel(ctx, centerX - 250, y - 48, 500, 82, "rgba(16, 22, 31, 0.9)", glow);
 
   ctx.textAlign = "center";
-  ctx.font = "31px monospace";
-  ctx.fillStyle = "#05070c";
-  ctx.fillText("PIXEL COURT", centerX + 4, y - 8 + 4);
-  ctx.fillStyle = "#583f28";
-  ctx.fillText("PIXEL COURT", centerX + 2, y - 8 + 2);
-  ctx.fillStyle = "#fff4c2";
-  ctx.fillText("PIXEL COURT", centerX, y - 8);
+  drawPixelText(ctx, "PIXEL COURT", centerX, y - 25, 5, "#fff4c2", {
+    align: "center",
+    shadow: [[4, 4, "#05070c"], [2, 2, "#583f28"]]
+  });
 
   ctx.font = "9px monospace";
   ctx.fillStyle = "#c9e8e0";
-  ctx.fillText("animated LAN tennis under moss, torches, crystals, and suspiciously athletic slimes", centerX, y + 16);
+  ctx.fillText("animated LAN tennis under moss, torches, crystals, and suspiciously athletic slimes", centerX, y + 20);
 
   const sparkleX = centerX - 217 + wrap(tick * 2.2, 0, 434);
   ctx.fillStyle = "rgba(255,255,255,0.72)";
@@ -1112,6 +1160,45 @@ function drawTinyRacket(ctx, x, y, dir, team, tick) {
   ctx.fillRect(Math.round(x + dir * 18 - 6), Math.round(y - 3 + lift), 12, 4);
   ctx.fillStyle = "rgba(255,255,255,0.55)";
   ctx.fillRect(Math.round(x + dir * 18 - 4), Math.round(y - 11 + lift), 8, 2);
+}
+
+
+function drawPixelText(ctx, text, x, y, scale, color, options = {}) {
+  const content = String(text || "").toUpperCase();
+  const align = options.align || "left";
+  const width = measurePixelText(content, scale);
+  const startX = Math.round(align === "center" ? x - width / 2 : align === "right" ? x - width : x);
+  const startY = Math.round(y);
+
+  for (const shadow of options.shadow || []) {
+    const [dx, dy, shadowColor] = shadow;
+    drawPixelTextRaw(ctx, content, startX + Math.round(dx), startY + Math.round(dy), scale, shadowColor);
+  }
+  drawPixelTextRaw(ctx, content, startX, startY, scale, color);
+}
+
+function drawPixelTextRaw(ctx, text, x, y, scale, color) {
+  ctx.fillStyle = color;
+  let cursor = Math.round(x);
+  for (const char of text) {
+    const glyph = PIXEL_FONT[char] || PIXEL_FONT[" "];
+    for (let row = 0; row < glyph.length; row += 1) {
+      const line = glyph[row];
+      for (let col = 0; col < line.length; col += 1) {
+        if (line[col] === "1") ctx.fillRect(cursor + col * scale, y + row * scale, scale, scale);
+      }
+    }
+    cursor += (glyph[0].length + 1) * scale;
+  }
+}
+
+function measurePixelText(text, scale) {
+  let width = 0;
+  for (const char of text) {
+    const glyph = PIXEL_FONT[char] || PIXEL_FONT[" "];
+    width += (glyph[0].length + 1) * scale;
+  }
+  return Math.max(0, width - scale);
 }
 
 function pixelPanel(ctx, x, y, w, h, fill, border) {

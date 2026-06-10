@@ -61,6 +61,7 @@ Open that new folder. You should see:
 README.md
 LICENSE
 package.json
+package-lock.json
 server.js
 public/
 docs/
@@ -104,16 +105,16 @@ grep '"version"' package.json
 Expected:
 
 ```text
-"version": "1.5.0",
+"version": "1.6.0",
 ```
 
 Also check the new graphics label:
 
 ```bash
-grep -R "Performance Lock" public docs README.md package.json
+grep -R "Sharp Performance" public docs README.md package.json
 ```
 
-If those commands do not show v1.5.0 / Performance Lock, the new files were copied into the wrong folder.
+If those commands do not show v1.6.0 / Sharp Performance, the new files were copied into the wrong folder.
 
 ### Step 5: Commit and push
 
@@ -122,7 +123,7 @@ From inside your existing local repo folder:
 ```bash
 git status
 git add .
-git commit -m "Fix Pixel Court performance and ball physics"
+git commit -m "Sharpen Pixel Court graphics"
 git pull --rebase origin main
 git push
 ```
@@ -155,7 +156,7 @@ If Terminal opens `vim` during `git rebase --continue`:
 3. Press Enter.
 4. Then run `git push`.
 
-If you are not sure, run `git status` and check that `package.json` still says `1.5.0` before pushing.
+If you are not sure, run `git status` and check that `package.json` still says `1.6.0` before pushing.
 
 ## Pulling the update on another computer
 
@@ -189,7 +190,7 @@ npm start
 The terminal prints something like:
 
 ```text
-Pixel Court v1.5.0
+Pixel Court v1.6.0
 Local:   http://localhost:7777
 LAN:     http://192.168.1.24:7777
 ```
@@ -199,7 +200,7 @@ Use the **Local** URL on the host computer. Use the **LAN** URL for nearby playe
 For a quick solo test:
 
 1. Open `http://localhost:7777`.
-2. Confirm **Graphics** is set to **Performance Lock**.
+2. Confirm **Graphics** is set to **Sharp Performance**.
 3. Click **AI Easy**.
 4. Click **Ready**.
 5. Click **Start Match**.
@@ -231,17 +232,17 @@ browser-game pixel-art websocket lan multiplayer tennis nodejs canvas game-dev a
 ## Suggested release notes
 
 ```text
-Pixel Court v1.5.0
+Pixel Court v1.6.0
 
-- Rescue performance pass for classroom laptops.
-- Default graphics mode: Performance Lock.
-- Low Power mode for older laptops.
-- 60 FPS active gameplay drawing in Performance Lock.
-- Lower internal Canvas resolution and cached scenery.
+- Crisp graphics pass while preserving classroom laptop performance.
+- Default graphics mode: Sharp Performance.
+- Low Power mode for older laptops, now less blurry than before.
+- 60 FPS active gameplay drawing in Sharp Performance.
+- Native 960×540 Canvas in Sharp Performance, cached scenery, and crisp pixel UI text.
 - Server broadcasts every physics tick to remove visible ball stutter.
 - Client-side smoothing for ball/player motion.
-- Lowered net height and rebuilt shot physics for more natural clears.
-- Fixed ball freezing/sticking mid-air after net/out points.
+- Keeps the v1.5 net height, shot physics, and dead-ball fixes.
+- Fixes blurry title/menu/HUD rendering from the old reduced-resolution canvas.
 - Esc pause/resume for Vs Computer matches.
 - LAN Singles, LAN Doubles, and Vs Computer mode.
 - Easy, Medium, and Hard AI.
@@ -259,10 +260,10 @@ npm start
 
 Then test:
 
-- Terminal prints **Pixel Court v1.5.0**.
+- Terminal prints **Pixel Court v1.6.0**.
 - Loading overlay appears and fades after connection.
 - Main screen shows **Pixel Court**.
-- Graphics dropdown defaults to **Performance Lock**.
+- Graphics dropdown defaults to **Sharp Performance**.
 - AI Easy room can start and run smoothly.
 - `Esc` pauses and resumes the AI match.
 - Normal shots clear the net.

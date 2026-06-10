@@ -54,8 +54,8 @@ Browsers cannot accept inbound socket connections on their own. A nearby compute
   - Draws the full pixel-art game world with Canvas.
   - Uses only procedural rectangles, lines, panels, and generated decorative objects.
   - Draws the animated main screen, demo rally, loading/status visuals, tennis score HUD, pause overlay, and CPU visual details.
-  - Uses a cached static scene for Performance Lock and Low Power modes so expensive tile/forest/court layers are drawn once and reused.
-  - Lowers Canvas backing resolution in laptop modes while preserving the 16:9 pixel-art composition.
+  - Uses a cached static scene for Sharp Performance and Low Power modes so expensive tile/forest/court layers are drawn once and reused.
+  - Sharp Performance uses the native 960×540 Canvas backing size for crisp menus, HUD, and pause screens; Low Power uses a moderate 0.8 scale for older machines.
 
 - `public/src/input.js`
   - Maps keyboard and touch controls to compact input packets.
@@ -80,7 +80,7 @@ Client to server:
 Server to client:
 
 ```json
-{ "type": "welcome", "playerId": "p_...", "version": "1.5.0" }
+{ "type": "welcome", "playerId": "p_...", "version": "1.6.0" }
 { "type": "roomState", "room": { "code": "ABCD", "mode": "ai", "paused": false, "aiDifficulty": "medium" } }
 { "type": "gameState", "state": { "phase": "playing", "paused": false, "games": [0, 0], "points": [1, 0], "tennisLabel": "15-Love" } }
 { "type": "notice", "text": "Joined room ABCD." }
@@ -168,8 +168,8 @@ Because the renderer is procedural, the repo stays tiny and has no image licensi
 
 The current build is designed for class laptops by default. The Graphics dropdown maps to renderer/CSS profiles:
 
-- **Performance Lock**: default; lower Canvas backing resolution, cached static world layer, 60 FPS gameplay draw target, 20 FPS lobby target, reduced live particles, active-match CSS animation disabled.
-- **Low Power**: very small Canvas backing store, 30 FPS gameplay draw target, 12 FPS lobby target, minimal decorative motion.
+- **Sharp Performance**: default; native 960×540 Canvas, cached static world layer, crisp pixel title/menu text, 60 FPS gameplay draw target, 24 FPS lobby target, reduced live particles, active-match CSS animation disabled.
+- **Low Power**: moderate 0.8 Canvas scale, 45 FPS gameplay draw target, 12 FPS lobby target, minimal decorative motion.
 - **Fancy 60 FPS**: high-detail redraw path for strong computers.
 
 Graphics mode only changes how often and how heavily each browser paints the scene. Scoring and physics still come from the server, so slower laptops can choose Low Power without changing match rules.

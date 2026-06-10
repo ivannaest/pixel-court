@@ -1,45 +1,44 @@
 # Pixel Court Performance Guide
 
-Pixel Court v1.5.0 is tuned for classroom laptops. The default graphics mode is **Performance Lock**.
+Pixel Court v1.6.0 is tuned for classroom laptops. The default graphics mode is **Sharp Performance**.
 
-## Why the game should run on a normal laptop
+## Why v1.6 exists
 
-Pixel Court is a 2D Canvas game with a small Node.js LAN server. A machine such as an Apple M2 MacBook Pro with 8 GB RAM should run it comfortably. If it feels laggy, the issue is almost certainly the project version, browser rendering path, or game-loop/physics behavior, not the laptop being too weak.
+The v1.5 performance pass fixed lag, but it made the Canvas too low-resolution. That helped speed, but it made the main menu, pause menu, title, and HUD look blurry. v1.6 keeps the low-lag architecture while restoring crisp pixel-art rendering.
 
-## What changed in v1.5.0
+## What changed in v1.6.0
 
-- **Performance Lock is now the default.** It keeps the pixel-art style but removes expensive live effects during matches.
-- **Gameplay drawing targets 60 FPS** in Performance Lock so the ball feels smooth.
-- **Internal Canvas resolution is lower** than the displayed size. This preserves the pixel-art look and reduces GPU/CPU cost.
-- **Static scenery is cached.** The forest, terrain, court, banners, and net are drawn once into an offscreen layer and reused.
-- **Server broadcasts every physics tick.** The old low-frequency packets made the ball look like it was snapping or freezing.
-- **Client-side visual smoothing** reduces packet-to-packet jumps.
-- **The net is lower and more playable.** Normal returns now clear it instead of clipping constantly.
-- **Dead balls settle on the court.** The ball should not freeze mid-air or look stuck in the net after a point.
-- **CSS animation stops during matches** in Performance Lock and Low Power.
+- **Sharp Performance is now the default.** It uses the native 960×540 Canvas backing size for crisp graphics.
+- **Static scenery is cached.** The forest, terrain, court, banners, and net are still drawn once into an offscreen layer and reused.
+- **Gameplay still targets 60 FPS** in Sharp Performance so the ball feels smooth.
+- **Canvas UI titles use a real blocky pixel renderer.** The main title, HUD title, pause menu, and match-complete text are drawn from rectangle glyphs instead of scaled browser font text.
+- **The game stage is capped at 960 px wide** on larger screens to avoid soft fractional stretching.
+- **The GPU canvas transform was removed** because it could make the Canvas look softened in some browsers.
+- **Low Power is less blurry than before.** It now uses 0.8 scale and 45 FPS instead of the harsher low-res path.
+- **CSS animation still stops during matches** in Sharp Performance and Low Power.
 
 ## Graphics modes
 
 | Mode | Use it for | Details |
 | --- | --- | --- |
-| Performance Lock | Default classroom play | Cached scenery, low internal resolution, 60 FPS gameplay draw target, tiny effects, no live-match CSS animation. |
-| Low Power | Older/low-battery laptops | Lower internal resolution, 30 FPS gameplay draw target, almost no trails/sparks/effects. |
+| Sharp Performance | Default classroom play | Native 960×540 Canvas, cached scenery, crisp pixel UI text, 60 FPS gameplay, tiny effects, no live-match CSS animation. |
+| Low Power | Older/low-battery laptops | 0.8 render scale, 45 FPS gameplay, almost no trails/sparks/effects. |
 | Fancy 60 FPS | Stronger machines | Full animated scene, more particles, higher effect counts. |
 
 ## Recommended class setup
 
 1. Start the server with `npm start`.
 2. Open `http://localhost:7777` on the host laptop.
-3. Confirm the terminal says `Pixel Court v1.5.0`.
-4. Confirm **Graphics** says **Performance Lock**.
+3. Confirm the terminal says `Pixel Court v1.6.0`.
+4. Confirm **Graphics** says **Sharp Performance**.
 5. Test **AI Easy** before class.
 6. For very weak laptops, switch only that laptop to **Low Power**.
 
-## Common causes of lag
+## Common causes of lag or blur
 
 ### Old files are still running
 
-If the browser or terminal still says `v1.4.0`, `v1.3.0`, or the graphics menu still says **Classroom Smooth**, the new optimized files were not copied into the repo folder that Node is running.
+If the browser or terminal still says `v1.5.0`, `v1.4.0`, `v1.3.0`, or the graphics menu still says **Performance Lock** / **Classroom Smooth**, the new files were not copied into the repo folder that Node is running.
 
 Check from the project folder:
 
@@ -50,7 +49,7 @@ grep '"version"' package.json
 Expected:
 
 ```text
-"version": "1.5.0",
+"version": "1.6.0",
 ```
 
 ### Browser cache
@@ -64,15 +63,15 @@ Windows/Linux: Ctrl + F5
 
 ### Fancy mode is selected
 
-Use **Performance Lock** for class. Fancy mode is intentionally more animated.
+Use **Sharp Performance** for class. Fancy mode is intentionally more animated.
+
+### The page is zoomed oddly
+
+Set browser zoom to 100% when presenting. The stage is capped at 960 px wide so the Canvas should look crisp at normal zoom.
 
 ### Laptop is in low-power mode
 
 Some laptops reduce browser performance on battery. Plugging in helps, but **Low Power** mode should still be usable.
-
-### Too many tabs/apps are open
-
-For class demos, close video calls, heavy browser tabs, and screen recorders if possible.
 
 ## Smoothness expectations
 
@@ -80,6 +79,7 @@ For class demos, close video calls, heavy browser tabs, and screen recorders if 
 - Normal returns should clear the net.
 - Net points should end cleanly; the ball should settle on the court.
 - Pressing **Esc** during an AI match should pause/resume immediately.
+- The main title, pause menu, and HUD should look crisp, not soft/blurry.
 
 ## Before presenting
 
@@ -93,7 +93,7 @@ npm start
 Then test:
 
 1. Open `http://localhost:7777`.
-2. Select **Performance Lock**.
+2. Select **Sharp Performance**.
 3. Click **AI Easy**.
 4. Click **Ready**.
 5. Click **Start Match**.
