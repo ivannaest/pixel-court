@@ -153,24 +153,7 @@ npm run check
 
 This runs Node syntax checks over the server and browser modules.
 
-## Create a GitHub repository and upload
-
-The full upload guide is in [`docs/GITHUB_UPLOAD.md`](docs/GITHUB_UPLOAD.md). The fast command-line path is:
-
-```bash
-git init
-git add .
-git commit -m "Initial Pixel Court game"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/pixel-court.git
-git push -u origin main
-```
-
-Create the empty GitHub repository first, then replace `YOUR_USERNAME` with your GitHub username. Do not initialize the GitHub repository with a README, license, or `.gitignore`, because this project already includes those files.
-
-## Notes on the visual style
-
-Pixel Court is an original Canvas-rendered fantasy pixel-art tennis game. It uses chunky blocks, parallax forests, underground crystals, glowing insects, banners, vines, torches, animated slimes, and high-contrast pixel UI to evoke the feeling of classic 2D sandbox adventure games while avoiding copied commercial assets.
+Pixel Court is an original Canvas-rendered fantasy pixel-art tennis game. It uses chunky blocks, parallax forests, underground crystals, glowing insects, banners, vines, torches, animated slimes, and high-contrast pixel UI to evoke the feeling of classic 2D sandbox adventure games.
 
 ## License
 
