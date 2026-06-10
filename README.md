@@ -1,5 +1,9 @@
 # Pixel Court
 
+## Disclaimer
+
+This game was created with the assistance of AI as part of a learning workshop focused on exploring AI-assisted development.
+
 **Pixel Court** is a 2D browser tennis game for class-friendly local play. It supports LAN **Singles**, LAN **Doubles**, and one-player **Vs Computer** mode with Easy, Medium, and Hard AI.
 
 The visual direction is original fantasy sandbox pixel art: a side-view clay court built from chunky terrain tiles, grass caps, vines, torches, crystal glow, banners, glowing rackets, pixel HUD panels, and a forest-court atmosphere. The project does **not** include commercial game assets, copied tiles, sprites, fonts, or sounds.
