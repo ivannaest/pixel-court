@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1524">
+  <title>Pixel Court</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="booting">
+  <main class="shell">
+    <section class="stage" aria-label="Game canvas">
+      <canvas id="game" width="960" height="540"></canvas>
+      <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
+        <div class="loader-card">
+          <div class="loader-logo" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <h2>Pixel Court</h2>
+          <p id="loadingText">Loading crystal court...</p>
+          <div class="loader-bar" aria-hidden="true"><span></span></div>
+          <div class="loader-floor" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <aside class="panel" aria-label="Lobby controls">
+      <header class="brand">
+        <div>
+          <h1>Pixel Court</h1>
+          <p>Animated LAN pixel tennis in a glowing forest court</p>
+        </div>
+        <span id="version" class="version">v</span>
+      </header>
+
+      <div class="connection">
+        <span id="statusDot" class="status-dot" aria-hidden="true"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+
+      <label class="field">
+        <span>Player name</span>
+        <input id="playerName" maxlength="18" autocomplete="nickname" spellcheck="false">
+      </label>
+
+      <div class="button-grid">
+        <button id="createSingles" class="primary">Create Singles</button>
+        <button id="createDoubles" class="primary alt">Create Doubles</button>
+      </div>
+
+      <section class="ai-box" aria-label="Computer opponent modes">
+        <h2>Computer Match</h2>
+        <p>Play solo against a crystal-crowned CPU with three difficulty levels.</p>
+        <div class="button-grid ai-grid">
+          <button id="createAiEasy">AI Easy</button>
+          <button id="createAiMedium" class="primary alt">AI Medium</button>
+          <button id="createAiHard" class="danger">AI Hard</button>
+        </div>
+      </section>
+
+      <label class="field join-field">
+        <span>Join room code</span>
+        <div class="join-row">
+          <input id="joinCode" maxlength="6" inputmode="latin" spellcheck="false" placeholder="ABCD">
+          <button id="joinRoom">Join</button>
+        </div>
+      </label>
+
+      <section id="roomPanel" class="room-panel" hidden>
+        <h2 id="roomTitle">Room</h2>
+        <p id="roomMeta">Waiting for players</p>
+        <ul id="players" class="players"></ul>
+        <div class="button-grid room-actions">
+          <button id="ready">Ready</button>
+          <button id="start" class="primary">Start Match</button>
+          <button id="copy">Copy Invite</button>
+          <button id="leave" class="danger">Leave</button>
+        </div>
+        <p id="hint" class="hint">Singles needs 2 players. Doubles needs 4 players.</p>
+      </section>
+
+      <section class="howto">
+        <h2>Controls</h2>
+        <p><kbd>A</kbd>/<kbd>D</kbd> or arrows move. <kbd>W</kbd> jumps. <kbd>K</kbd>, <kbd>J</kbd>, <kbd>Space</kbd>, or <kbd>Enter</kbd> swings.</p>
+        <p>Run the server on one computer, then nearby players open the LAN URL printed in the terminal. Computer mode works from the same page with one human player.</p>
+      </section>
+    </aside>
+  </main>
+
+  <nav class="touch-controls" aria-label="Touch controls">
+    <button data-action="left" aria-label="Move left">◀</button>
+    <button data-action="right" aria-label="Move right">▶</button>
+    <button data-action="jump" aria-label="Jump">▲</button>
+    <button data-action="down" aria-label="Aim low">▼</button>
+    <button data-action="swing" class="swing" aria-label="Swing">HIT</button>
+  </nav>
+
+  <script type="module" src="/src/client.js"></script>
+</body>
+</html>

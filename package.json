@@ -1,0 +1,29 @@
+{
+  "name": "pixel-court",
+  "version": "1.2.0",
+  "description": "A polished animated 2D browser tennis game with LAN multiplayer, singles, doubles, AI opponents, tennis scoring, and an original fantasy pixel-art court.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js --dev",
+    "check": "node --check server.js && node --check public/src/client.js && node --check public/src/input.js && node --check public/src/renderer.js && node --check public/src/shared/constants.js && node --check public/src/shared/physics.js && node --check public/src/shared/ai.js"
+  },
+  "keywords": [
+    "browser-game",
+    "tennis",
+    "lan",
+    "websocket",
+    "pixel-art",
+    "multiplayer",
+    "single-player",
+    "ai",
+    "singles",
+    "doubles"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
