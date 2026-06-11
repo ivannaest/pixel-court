@@ -50,7 +50,7 @@ This version keeps the v1.5 lag fix, then fixes the blurry graphics caused by ov
 
 Pixel Court needs **Node.js** and **npm** to run. npm is included when you install Node.js.
 
-#### Windows
+### Windows
 
 1. Go to the Node.js website.
 2. Download the **LTS** version for Windows.
@@ -60,6 +60,9 @@ Pixel Court needs **Node.js** and **npm** to run. npm is included when you insta
 ```powershell
 node -v
 npm -v
+```
+
+If both commands show version numbers, you are ready.
 
 ### Mac
 
@@ -71,6 +74,9 @@ npm -v
 ```bash
 node -v
 npm -v
+```
+
+If both commands show version numbers, you are ready.
 
 
 ## Run locally
