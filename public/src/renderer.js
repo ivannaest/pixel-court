@@ -988,7 +988,7 @@ function drawEmptyLobby(ctx, room, connected, tick, profile = QUALITY_PROFILES.f
     ctx.fillStyle = "#e3b8ff";
     ctx.fillText("Singles: 2 players  •  Doubles: 4 players  •  AI: Easy / Medium / Hard", WORLD.centerX, panelY + 78);
     ctx.fillStyle = Math.sin(tick / 18) > 0 ? "#86e9ff" : "#fff4c2";
-    ctx.fillText("Detailed pixel court, cached layers, and laptop-safe motion.", WORLD.centerX, panelY + 100);
+    ctx.fillText("For when the boredom gets too much.", WORLD.centerX, panelY + 100);
   }
 
   drawLoadingRuneBar(ctx, WORLD.centerX - 180, panelY + 110, 360, 8, tick, connected);
