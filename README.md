@@ -46,6 +46,33 @@ This version keeps the v1.5 lag fix, then fixes the blurry graphics caused by ov
 - Same Wi-Fi/LAN for multiplayer.
 - Firewall permission for Node.js if your computer asks.
 
+### Install Node.js and npm
+
+Pixel Court needs **Node.js** and **npm** to run. npm is included when you install Node.js.
+
+#### Windows
+
+1. Go to the Node.js website.
+2. Download the **LTS** version for Windows.
+3. Open the installer and keep clicking **Next** until it finishes.
+4. Open **PowerShell** and check that it worked:
+
+```powershell
+node -v
+npm -v
+
+### Mac
+
+1. Go to the Node.js website.
+2. Download the **LTS** version for macOS.
+3. Open the installer and keep clicking **Continue** until it finishes.
+4. Open **Terminal** and check that it worked:
+
+```bash
+node -v
+npm -v
+
+
 ## Run locally
 
 From the project folder:
